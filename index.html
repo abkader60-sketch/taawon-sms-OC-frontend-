@@ -1,0 +1,2428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+        Configurable API base URL.
+        - Local dev: leave the default empty content="" and the JS falls back to http://127.0.0.1:8000.
+        - Production: set content to the absolute URL of your API
+          (e.g., content="https://taawon-sms-api.up.railway.app").
+    -->
+    <meta name="sms-api-base" content="https://securitysms-production.up.railway.app">
+    <title>Ta'awon P3 SMS</title>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { min-width: 260px; background-color: #1a1c23; color: white; display: flex; flex-direction: column; z-index: 10; }
+        .sidebar-logo { padding: 20px; border-bottom: 1px solid #2d303a; color: #00a651; display: flex; flex-direction: column; gap: 5px; }
+        .logo-title { font-size: 20px; font-weight: bold; }
+        .logo-subtitle { font-size: 13px; font-weight: normal; color: #a0a5b1; }
+        .nav-item { padding: 15px 20px; color: #a0a5b1; text-decoration: none; border-left: 4px solid transparent; cursor: pointer; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background-color: #262933; border-left-color: #00a651; color: white; }
+        .nav-item.disabled { opacity: 0.5; cursor: default; }
+
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .header { background-color: #00a651; color: white; padding: 30px 40px 50px 40px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; position: relative; }
+        .header h1 { margin: 0; font-size: 26px; font-weight: 500; }
+        .header p { margin: 8px 0 0 0; opacity: 0.9; font-size: 15px; }
+        .role-picker-wrap { position: absolute; top: 22px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.15); padding: 8px 14px; border-radius: 24px; }
+        .role-picker-wrap label { color: white; font-size: 12px; font-weight: 600; margin: 0; }
+        .role-picker-wrap select { background: white; color: #1a1c23; border: none; padding: 6px 10px; border-radius: 16px; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; min-width: 200px; }
+
+        .dashboard-area { padding: 0 40px 40px 40px; position: relative; top: -30px; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 30px; margin-bottom: 20px; }
+        .card-title { color: #00a651; font-weight: 600; font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .card-title-actions { display: flex; gap: 8px; }
+        .card-subtitle { font-size: 13px; color: #666; font-weight: normal; margin-top: -10px; margin-bottom: 14px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full-width { grid-column: span 2; }
+        label { font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 600; }
+        input[type="text"], input[type="email"], input[type="date"], input[type="tel"], select, input[type="file"], textarea { padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; outline: none; transition: border 0.3s; font-family: inherit; box-sizing: border-box; }
+        input:focus, select:focus, textarea:focus { border-color: #00a651; }
+        .checkbox-group { display: flex; align-items: flex-start; gap: 8px; margin-top: 5px; }
+        .checkbox-group input { width: 16px; height: 16px; accent-color: #00a651; cursor: pointer; margin-top: 2px; flex-shrink: 0; }
+        .checkbox-group label { margin: 0; cursor: pointer; font-weight: normal; line-height: 1.4; }
+        .btn-submit { background-color: #00a651; color: white; border: none; padding: 14px 24px; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; width: 100%; transition: background 0.3s; margin-top: 10px; }
+        .btn-submit:hover { background-color: #008a43; }
+        .field-hint { font-size: 11px; color: #888; margin-top: 4px; font-style: italic; }
+        .inline-status { padding: 12px 14px; border-radius: 4px; margin: 10px 0 0 0; font-weight: 600; text-align: center; }
+
+        /* Variant info banner */
+        .variant-banner { padding: 12px 14px; border-radius: 4px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .variant-banner.brief { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .variant-banner.full  { background: #f3e5f5; color: #6a1b9a; border: 1px solid #e1bee7; }
+        .variant-banner.empty { background: #fafafa; color: #888; border: 1px dashed #ccc; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f9fafb; color: #555; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { font-size: 13px; color: #333; }
+        tr:hover { background-color: #fcfcfc; }
+
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; white-space: nowrap; }
+        .badge-pending  { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+        .badge-security { background-color: #f3e5f5; color: #6a1b9a; border: 1px solid #e1bee7; }
+        .badge-history  { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .badge-approved { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .badge-rejected { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .badge-edit     { background-color: #fff8e1; color: #6d4c00; border: 1px solid #ffe0a3; }
+
+        .btn-action { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; margin-right: 5px; margin-bottom: 4px; }
+        .btn-view    { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .btn-view:hover { background-color: #bbdefb; }
+        .btn-approve { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .btn-approve:hover { background-color: #c8e6c9; }
+        .btn-reject  { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .btn-reject:hover { background-color: #ffcdd2; }
+        .btn-edit    { background-color: #fff8e1; color: #6d4c00; border: 1px solid #ffe0a3; }
+        .btn-edit:hover { background-color: #ffe0a3; }
+        .btn-save    { background-color: #00a651; color: white; border: 1px solid #008a43; }
+        .btn-save:hover { background-color: #008a43; }
+        .btn-export  { background-color: #00a651; color: white; border: 1px solid #008a43; padding: 8px 16px; }
+        .btn-export:hover { background-color: #008a43; }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+        .refresh-btn { background-color: white; border: 1px solid #ddd; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; color: #555; }
+        .refresh-btn:hover { background-color: #f0f0f0; }
+
+        .app-id-link { color: #1565c0; text-decoration: none; font-weight: 600; cursor: pointer; }
+        .app-id-link:hover { text-decoration: underline; }
+
+        .status-box { padding: 15px; margin-bottom: 20px; border-radius: 4px; font-weight: bold; text-align: center; }
+        .success-msg { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .error-msg { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .info-msg { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .warning-msg { background-color: #fff8e1; color: #6d4c00; border: 1px solid #ffe0a3; }
+        .hidden { display: none !important; }
+        .comments-text { font-style: italic; color: #777; font-size: 12px; }
+        .dev-note { background-color: #fff8e1; color: #6d4c00; border: 1px solid #ffe0a3; padding: 10px 14px; border-radius: 4px; font-size: 12px; margin-bottom: 18px; }
+        .no-perm-text { font-size: 11px; color: #888; font-style: italic; }
+
+        .audit-group { border: 1px solid #eee; border-radius: 6px; margin-bottom: 8px; overflow: hidden; }
+        .audit-group-header { padding: 10px 14px; background: #fafafa; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 13px; user-select: none; }
+        .audit-group-header:hover { background: #f0f0f0; }
+        .audit-group-header .caret { color: #888; font-size: 12px; transition: transform 0.15s; display: inline-block; }
+        .audit-group.expanded .audit-group-header .caret { transform: rotate(90deg); }
+        .audit-group-summary { color: #555; }
+        .audit-group-summary strong { color: #1a1c23; }
+        .audit-events { display: none; padding: 4px 0; }
+        .audit-group.expanded .audit-events { display: block; }
+        .audit-event { padding: 8px 14px 8px 30px; border-top: 1px solid #f4f4f4; display: grid; grid-template-columns: 130px 100px 130px 1fr 1fr; gap: 12px; align-items: baseline; font-size: 12px; }
+        .audit-event-time { color: #888; font-size: 11px; }
+
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .modal { background: white; border-radius: 8px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { padding: 20px 30px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 1; }
+        .modal-header h2 { margin: 0; color: #00a651; font-size: 20px; }
+        .modal-header-actions { display: flex; gap: 8px; align-items: center; }
+        .modal-close { background: transparent; border: none; font-size: 24px; cursor: pointer; color: #888; padding: 0 4px; }
+        .modal-close:hover { color: #333; }
+        .modal-body { padding: 25px 30px; }
+        .modal-footer { padding: 15px 30px; border-top: 1px solid #eee; text-align: right; background: #fafafa; border-radius: 0 0 8px 8px; }
+        .modal-footer button { padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; border: none; font-size: 14px; }
+        .modal-footer .btn-cancel { background: #eee; color: #333; margin-right: 10px; }
+        .modal-footer .btn-confirm-reject { background: #c62828; color: white; }
+        .modal-footer .btn-cancel:hover { background: #ddd; }
+        .modal-footer .btn-confirm-reject:hover { background: #b71c1c; }
+
+        .detail-grid { display: grid; grid-template-columns: 180px 1fr; gap: 8px 20px; font-size: 13px; }
+        .detail-grid dt { font-weight: 600; color: #555; }
+        .detail-grid dd { margin: 0; color: #222; }
+        .detail-grid input, .detail-grid select { padding: 6px 8px; font-size: 13px; }
+        .section-heading { font-weight: 600; color: #00a651; font-size: 14px; margin: 20px 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #f0f0f0; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .attachment-link { display: inline-block; padding: 6px 12px; background: #e3f2fd; color: #1565c0; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: 600; margin: 4px 4px 4px 0; cursor: pointer; }
+        .attachment-link:hover { background: #bbdefb; }
+        .attachment-preview-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px; }
+        .attachment-preview-container { background: #fff; border-radius: 8px; width: 90%; max-width: 900px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+        .attachment-preview-header { padding: 16px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .attachment-preview-header h3 { margin: 0; color: #00a651; font-size: 16px; }
+        .attachment-preview-body { padding: 20px; overflow-y: auto; flex: 1; display: flex; align-items: center; justify-content: center; background: #f5f5f5; min-height: 300px; }
+        .attachment-preview-body img { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px; }
+        .attachment-preview-body iframe { width: 100%; height: 70vh; border: none; border-radius: 4px; }
+        .attachment-preview-body .download-fallback { text-align: center; padding: 40px; }
+        .attachment-preview-body .download-fallback p { color: #666; margin-bottom: 16px; }
+        .reject-reason-textarea { width: 100%; min-height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 14px; resize: vertical; box-sizing: border-box; }
+
+        .admin-tabs { display: flex; gap: 4px; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px; flex-wrap: wrap; }
+        .admin-tab { padding: 12px 20px; cursor: pointer; font-weight: 600; color: #666; font-size: 13px; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: 0.2s; white-space: nowrap; }
+        .admin-tab:hover { color: #00a651; }
+        .admin-tab.active { color: #00a651; border-bottom-color: #00a651; }
+
+        .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; padding: 12px; background: #fafafa; border-radius: 4px; }
+        .perm-grid label { font-weight: normal; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .role-card, .group-card { border: 1px solid #eee; border-radius: 6px; padding: 16px; margin-bottom: 12px; background: #fff; }
+        .role-card-header, .group-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+        .role-card-header strong, .group-card-header strong { font-size: 15px; color: #1a1c23; }
+        .role-card-header .role-id, .group-card-header .group-id { font-size: 11px; color: #999; }
+        .member-list { font-size: 12px; color: #555; margin-top: 6px; }
+        .multi-checkbox-list { max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 4px; background: #fafafa; }
+        .multi-checkbox-list label { font-weight: normal; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+        .small-form-grid { display: grid; gap: 12px; align-items: end; padding: 14px; background: #fafafa; border-radius: 4px; margin-top: 10px; }
+        .small-form-grid input, .small-form-grid select { padding: 8px; }
+        .small-form-grid button { padding: 9px 18px; }
+        .inactive-row td { opacity: 0.55; }
+
+        .submitter-card { border: 1px solid #eee; border-radius: 6px; padding: 14px; margin-bottom: 10px; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+        .submitter-card .meta { font-size: 12px; color: #666; }
+        .submitter-card strong { color: #1a1c23; }
+        .group-tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 6px; }
+        .group-tag-1 { background: #e3f2fd; color: #1565c0; }
+        .group-tag-2 { background: #f3e5f5; color: #6a1b9a; }
+
+        .setting-row { display: grid; grid-template-columns: 250px 1fr auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; }
+        .setting-row .setting-key { font-weight: 600; color: #1a1c23; font-size: 13px; }
+        .setting-row .setting-desc { font-size: 11px; color: #888; margin-top: 2px; font-style: italic; }
+
+        .lookup-add-form { display: flex; gap: 10px; align-items: end; margin-bottom: 16px; padding: 14px; background: #fafafa; border-radius: 4px; }
+        .lookup-add-form .form-group { margin-bottom: 0; }
+        .lookup-add-form input { padding: 8px; }
+        .lookup-add-form button { padding: 9px 18px; }
+
+        /* ===== v0.8: Auth overlays ===== */
+        .auth-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #00733e 0%, #00a651 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+        .auth-card { background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 420px; padding: 36px 32px; }
+        .auth-card h1 { margin: 0 0 6px; color: #1a1c23; font-size: 22px; }
+        .auth-card .auth-subtitle { color: #666; font-size: 13px; margin: 0 0 24px; }
+        .auth-card .form-group { margin-bottom: 16px; }
+        .auth-card label { display: block; font-size: 12px; color: #555; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .auth-card input[type="text"], .auth-card input[type="email"], .auth-card input[type="password"] { width: 100%; padding: 12px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .auth-card input:focus { outline: none; border-color: #00a651; box-shadow: 0 0 0 3px rgba(0,166,81,0.15); }
+        .auth-card .auth-submit { width: 100%; padding: 14px; background: #00a651; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 0.03em; }
+        .auth-card .auth-submit:hover { background: #008f44; }
+        .auth-card .auth-submit:disabled { background: #aaa; cursor: not-allowed; }
+        .auth-card .auth-error { background: #fee; color: #c00; padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; border: 1px solid #fcc; }
+        .auth-card .auth-info { background: #fff8e1; color: #6d4c00; padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; border: 1px solid #ffe082; }
+        .auth-card .auth-toggle { text-align: center; margin-top: 18px; font-size: 12px; color: #777; }
+        .auth-card .auth-toggle a { color: #00a651; text-decoration: none; font-weight: 600; cursor: pointer; }
+        .auth-card .auth-toggle a:hover { text-decoration: underline; }
+
+        /* Logged-in user chip */
+        .user-chip { display: flex; align-items: center; gap: 10px; }
+        .user-chip-info { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+        .user-chip-info .uname { font-size: 13px; font-weight: 600; color: #fff; }
+        .user-chip-info .urole { font-size: 11px; color: #d4f0d8; }
+        .logout-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25); padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+        .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+        /* External-submitter mode: hide sidebar entirely */
+        body.external-mode .sidebar { display: none; }
+        body.external-mode .main-content { margin-left: 0 !important; }
+
+        /* Hide the main app until logged in */
+        body:not(.app-loaded) .sidebar,
+        body:not(.app-loaded) .main-content { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- ===== v0.8: Auth overlays ===== -->
+    <div id="authStaffOverlay" class="auth-overlay" style="display: none;">
+        <div class="auth-card">
+            <h1>Ta'awon P3 SMS</h1>
+            <p class="auth-subtitle">Staff sign-in</p>
+            <div id="authStaffError" class="auth-error" style="display: none;"></div>
+            <form id="authStaffForm" onsubmit="event.preventDefault(); doStaffLogin();">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" autocomplete="current-password" required>
+                </div>
+                <button type="submit" id="authStaffSubmit" class="auth-submit">Sign in</button>
+            </form>
+            <div class="auth-toggle">
+                External submitter? <a onclick="showExternalLogin()">Sign in here →</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="authExternalOverlay" class="auth-overlay" style="display: none;">
+        <div class="auth-card">
+            <h1>Ta'awon P3 SMS</h1>
+            <p class="auth-subtitle">External submitter sign-in</p>
+            <div id="authExternalError" class="auth-error" style="display: none;"></div>
+            <form id="authExternalForm" onsubmit="event.preventDefault(); doExternalLogin();">
+                <div class="form-group">
+                    <label for="extLoginEmail">Email</label>
+                    <input type="email" id="extLoginEmail" autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="extLoginPassword">Password</label>
+                    <input type="password" id="extLoginPassword" autocomplete="current-password" required>
+                </div>
+                <button type="submit" id="authExternalSubmit" class="auth-submit">Sign in</button>
+            </form>
+            <div class="auth-toggle">
+                Staff member? <a onclick="showStaffLogin()">Sign in here →</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="authChangePasswordOverlay" class="auth-overlay" style="display: none;">
+        <div class="auth-card">
+            <h1>Change your password</h1>
+            <p class="auth-subtitle">You're using a temporary password. Please choose a new one before continuing.</p>
+            <div id="authCpError" class="auth-error" style="display: none;"></div>
+            <div class="auth-info">Minimum 8 characters. Must be different from your current password.</div>
+            <form id="authCpForm" onsubmit="event.preventDefault(); doChangePassword();">
+                <div class="form-group">
+                    <label for="cpCurrent">Current (temporary) password</label>
+                    <input type="password" id="cpCurrent" autocomplete="current-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="cpNew">New password</label>
+                    <input type="password" id="cpNew" autocomplete="new-password" minlength="8" required>
+                </div>
+                <div class="form-group">
+                    <label for="cpConfirm">Confirm new password</label>
+                    <input type="password" id="cpConfirm" autocomplete="new-password" minlength="8" required>
+                </div>
+                <button type="submit" id="authCpSubmit" class="auth-submit">Change password</button>
+            </form>
+            <div class="auth-toggle">
+                <a onclick="doLogout()">Sign out instead</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Main app (hidden until logged in via body.app-loaded class) ===== -->
+
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-title">◆ Ta'awon P3: SMS</div>
+            <div class="logo-subtitle">Security Management System</div>
+        </div>
+        <div class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')">Action Dashboard</div>
+        <div class="nav-item" id="nav-id-form" onclick="switchView('id-form')">Site Access ID Form</div>
+        <div class="nav-item hidden" id="nav-admin" onclick="switchView('admin')">Admin</div>
+        <div class="nav-item disabled">Material Gate Pass (Coming Soon)</div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1 id="pageTitle">Action Dashboard</h1>
+            <p id="pageSubtitle">Review and manage pending security clearances and workflow approvals.</p>
+            <div class="role-picker-wrap">
+                <div class="user-chip" id="userChip">
+                    <div class="user-chip-info">
+                        <span class="uname" id="loggedInName">—</span>
+                        <span class="urole" id="loggedInRole">—</span>
+                    </div>
+                    <button class="logout-btn" onclick="doLogout()">Sign out</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-area">
+
+            <!-- DASHBOARD VIEW -->
+            <div id="view-dashboard">
+                <div id="dashStatusMessage" class="status-box hidden"></div>
+                <div class="card">
+                    <div class="card-title">
+                        Pending Applications
+                        <button class="refresh-btn" onclick="fetchAllData()">↻ Refresh</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>App ID</th><th>Date Submitted</th><th>Full Name</th><th>Organization</th><th>Current Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="applicationsTableBody"><tr><td colspan="6" style="text-align: center; color: #888;">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        All Applications
+                        <div class="card-title-actions"><button class="refresh-btn btn-export" onclick="exportToExcel()">⤓ Export to Excel</button></div>
+                    </div>
+                    <div class="card-subtitle">Includes approved, rejected, and pending. Click any App ID or View button to see full details.</div>
+                    <table>
+                        <thead>
+                            <tr><th>App ID</th><th>Date Submitted</th><th>Full Name</th><th>Organization</th><th>Status</th><th></th></tr>
+                        </thead>
+                        <tbody id="allApplicationsTableBody"><tr><td colspan="6" style="text-align: center; color: #888;">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Workflow Audit Log</div>
+                    <div class="card-subtitle">Events grouped by application. Click an application's header to expand its history. The App ID is clickable to open the full record.</div>
+                    <div id="historyGroupedBody"><p style="color: #888; text-align: center;">Loading...</p></div>
+                </div>
+            </div>
+
+            <!-- SITE ACCESS ID FORM -->
+            <div id="view-id-form" class="hidden">
+                <div class="dev-note">
+                    <strong>Note:</strong> The form layout adapts based on the Company / Employer you select.
+                    Subcontractor personnel get the comprehensive form; Client / PMC / Main Contractor / LDC personnel
+                    get a brief form.
+                </div>
+
+                <form id="idApplicationForm" novalidate>
+
+                    <!-- ============== 1. APPLICATION CONTEXT ============== -->
+                    <div class="card">
+                        <div class="card-title">1. Application Context</div>
+
+                        <div id="variantBanner" class="variant-banner empty">
+                            <span>Choose a Company / Employer below to see the appropriate form fields.</span>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Project *</label>
+                                <select id="location" required>
+                                    <option value="" disabled selected>Select project</option>
+                                    <option value="Dammam">Dammam</option>
+                                    <option value="Khobar">Khobar</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Company Name / Employer *</label>
+                                <select id="companyName" required onchange="onCompanyChange()">
+                                    <option value="" disabled selected>Select company</option>
+                                    <option value="SEVEN">SEVEN (Client)</option>
+                                    <option value="ELLISDON">ELLISDON (PMC)</option>
+                                    <option value="SBG">SBG (Main Contractor)</option>
+                                    <option value="ATKINS">ATKINS (LDC)</option>
+                                    <option value="AECOM">AECOM (LDC)</option>
+                                    <option value="Subcontractor (other)">Subcontractor</option>
+                                </select>
+                                <span class="field-hint">Determines which fields appear below.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>ID Type *</label>
+                                <select id="idType" required>
+                                    <option value="" disabled selected>Select ID type</option>
+                                    <option value="New Project ID">New Project ID</option>
+                                    <option value="Re-New Project ID">Re-New Project ID</option>
+                                    <option value="Replacement for a Damaged ID">Replacement for a Damaged ID</option>
+                                    <option value="Replacement for a LOST ID">Replacement for a LOST ID</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Language *</label>
+                                <select id="language" required>
+                                    <option value="" disabled selected>Select language</option>
+                                    <option value="Arabic">Arabic</option>
+                                    <option value="English">English</option>
+                                    <option value="Hindi">Hindi</option>
+                                    <option value="Urdu">Urdu</option>
+                                    <option value="Tagalog">Tagalog</option>
+                                    <option value="Bengali">Bengali</option>
+                                    <option value="Nepali">Nepali</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Safety Induction Date *</label>
+                                <input type="date" id="safetyInductionDate" required>
+                            </div>
+
+                            <!-- Brief-only -->
+                            <div class="form-group brief-only hidden">
+                                <label>Date Joined *</label>
+                                <input type="date" id="dateJoined">
+                                <span class="field-hint">Date this person joined the organization.</span>
+                            </div>
+                            <div class="form-group brief-only hidden">
+                                <label>Reports To *</label>
+                                <input type="text" id="reportsTo" placeholder="e.g. Mohammed Al-Harbi (Site Manager)">
+                                <span class="field-hint">Direct supervisor's name and title.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============== 2. APPLICANT DETAILS ============== -->
+                    <div class="card">
+                        <div class="card-title">2. Applicant Details</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Full Name (as per Iqama / Passport) *</label>
+                                <input type="text" id="fullName" required>
+                            </div>
+
+                            <!-- Full-only: Gender -->
+                            <div class="form-group full-only">
+                                <label>Gender *</label>
+                                <select id="gender">
+                                    <option value="" disabled selected>Select gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Nationality *</label>
+                                <select id="nationality" required>
+                                    <option value="" disabled selected>Select nationality</option>
+                                    <!-- Filled by JS from COUNTRY_LIST -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Date of Birth *</label>
+                                <input type="date" id="dateOfBirth" required>
+                            </div>
+
+                            <!-- Both forms get Blood Type (kept on brief: safety relevant) -->
+                            <div class="form-group">
+                                <label>Blood Type *</label>
+                                <select id="bloodType" required>
+                                    <option value="" disabled selected>Select blood type</option>
+                                    <option value="O+">O+</option> <option value="O-">O-</option>
+                                    <option value="A+">A+</option> <option value="A-">A-</option>
+                                    <option value="B+">B+</option> <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option> <option value="AB-">AB-</option>
+                                    <option value="Unknown">Unknown</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Employee Number</label>
+                                <input type="text" id="employeeNo" placeholder="Optional">
+                                <span class="field-hint">Optional. Editable by the reviewer.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Subcontractor Name</label>
+                                <select id="subcontractorName">
+                                    <option value="" disabled selected>Select subcontractor</option>
+                                </select>
+                                <span class="field-hint">Required for subcontractor personnel. Select from the list.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============== 3. IDENTIFICATION ============== -->
+                    <div class="card">
+                        <div class="card-title">3. Identification</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Iqama / Business Visa / National ID Number *</label>
+                                <input type="text" id="iqamaNumber" required inputmode="numeric" pattern="[0-9]+" title="Numbers only" placeholder="Numbers only">
+                                <span class="field-hint">Numbers only.</span>
+                            </div>
+
+                            <!-- Full-only: Passport -->
+                            <div class="form-group full-only">
+                                <label>Passport Number *</label>
+                                <input type="text" id="passportNo" pattern="[A-Za-z0-9]+" title="Letters and numbers only" placeholder="e.g. A1234567">
+                                <span class="field-hint">Alphanumeric.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============== 4. CONTACT INFORMATION ============== -->
+                    <div class="card">
+                        <div class="card-title">4. Contact Information</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Mobile Number *</label>
+                                <input type="tel" id="mobileNo" required placeholder="+966 5X XXX XXXX">
+
+                                <!-- Full-only: WhatsApp toggle -->
+                                <div class="checkbox-group full-only">
+                                    <input type="checkbox" id="sameAsWhatsapp" checked onchange="handleWhatsAppChange()">
+                                    <label for="sameAsWhatsapp">Use this number for WhatsApp</label>
+                                </div>
+                            </div>
+
+                            <!-- Full-only: WhatsApp number, conditional -->
+                            <div class="form-group hidden full-only" id="whatsappWrapper">
+                                <label>WhatsApp Number *</label>
+                                <input type="tel" id="whatsappNo" placeholder="Enter WhatsApp number">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Email *</label>
+                                <input type="email" id="email" required placeholder="name@company.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============== 5. EMPLOYMENT & PROFESSION (full-only) ============== -->
+                    <div class="card full-only">
+                        <div class="card-title">5. Employment &amp; Profession</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Trade / Profession (as in the Iqama) *</label>
+                                <input type="text" id="tradeIqama">
+                            </div>
+                            <div class="form-group">
+                                <label>Trade / Profession (as in the Project) *</label>
+                                <input type="text" id="tradeProject">
+                            </div>
+                            <div class="form-group full-width">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="sponsorIsThirdParty" onchange="handleSponsorChange()">
+                                    <label for="sponsorIsThirdParty">
+                                        The sponsor on the Iqama is <strong>not</strong> the supplier or subcontractor (a Legal Agreement attachment is required).
+                                        <br><span class="field-hint">The approver will verify this declaration.</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============== 6. ATTACHMENTS ============== -->
+                    <div class="card">
+                        <div class="card-title">6. Attachments</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>ID Copy *</label>
+                                <input type="file" id="idCopyUpload" accept="image/*,.pdf" required>
+                                <span class="field-hint">Required for all forms.</span>
+                            </div>
+
+                            <!-- Full-only attachments -->
+                            <div class="form-group full-only">
+                                <label>Insurance Validity *</label>
+                                <input type="file" id="insuranceUpload" accept="image/*,.pdf">
+                                <span class="field-hint">Required.</span>
+                            </div>
+                            <div class="form-group full-only">
+                                <label>Personal Photo</label>
+                                <input type="file" id="photoUpload" accept="image/*">
+                                <span class="field-hint">Recommended.</span>
+                            </div>
+                            <div class="form-group hidden full-only" id="legalAgreementWrapper">
+                                <label>Legal Agreement *</label>
+                                <input type="file" id="legalAgreementUpload" accept=".pdf,image/*">
+                                <span class="field-hint">Required because the Iqama sponsor is a third party.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Submit Application</button>
+                    <div id="formStatusMessage" class="inline-status hidden"></div>
+                </form>
+            </div>
+
+            <!-- ADMIN VIEW -->
+            <div id="view-admin" class="hidden">
+                <div id="adminStatusMessage" class="status-box hidden"></div>
+                <div class="card">
+                    <div class="admin-tabs">
+                        <div class="admin-tab active" id="atab-users"     onclick="switchAdminTab('users')">Internal Users</div>
+                        <div class="admin-tab"        id="atab-roles"     onclick="switchAdminTab('roles')">Roles &amp; Permissions</div>
+                        <div class="admin-tab"        id="atab-groups"    onclick="switchAdminTab('groups')">Groups</div>
+                        <div class="admin-tab"        id="atab-external"  onclick="switchAdminTab('external')">External Submitters</div>
+                        <div class="admin-tab"        id="atab-lookups"   onclick="switchAdminTab('lookups')">Lookup Tables</div>
+                        <div class="admin-tab"        id="atab-settings"  onclick="switchAdminTab('settings')">System Settings</div>
+                    </div>
+
+                    <div id="apane-users" class="admin-pane">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Internal Staff Users</h3>
+                        <p class="card-subtitle" style="margin-top:0;">Internal staff who operate the system.</p>
+                        <table>
+                            <thead><tr><th>ID</th><th>Full Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody id="adminUsersTableBody"><tr><td colspan="6" style="text-align:center;color:#888;">Loading...</td></tr></tbody>
+                        </table>
+                        <h3 style="margin-top:30px;color:#1a1c23;font-size:16px;">Add a New Internal User</h3>
+                        <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;">
+                            <div><label>Full name</label><input type="text" id="newUserFullName"></div>
+                            <div><label>Username</label><input type="text" id="newUserUsername"></div>
+                            <div><label>Role</label><select id="newUserRoleId"></select></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createUser()">Add User</button></div>
+                        </div>
+                    </div>
+
+                    <div id="apane-roles" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Roles &amp; Permissions</h3>
+                        <p class="card-subtitle" style="margin-top:0;">Tick permissions per role and click Save below each role.</p>
+                        <div id="adminRolesContainer"><p style="color:#888;">Loading...</p></div>
+                        <h3 style="margin-top:30px;color:#1a1c23;font-size:16px;">Add a New Role</h3>
+                        <div class="small-form-grid" style="grid-template-columns: 1fr 2fr auto;">
+                            <div><label>Role name</label><input type="text" id="newRoleName"></div>
+                            <div><label>Description</label><input type="text" id="newRoleDescription"></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createRole()">Add Role</button></div>
+                        </div>
+                        <p class="field-hint">Set the permissions for the new role above.</p>
+                    </div>
+
+                    <div id="apane-groups" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Groups</h3>
+                        <p class="card-subtitle" style="margin-top:0;">Organizational only - groups don't grant permissions.</p>
+                        <div id="adminGroupsContainer"><p style="color:#888;">Loading...</p></div>
+                        <h3 style="margin-top:30px;color:#1a1c23;font-size:16px;">Add a New Group</h3>
+                        <div class="small-form-grid" style="grid-template-columns: 1fr 2fr auto;">
+                            <div><label>Group name</label><input type="text" id="newGroupName"></div>
+                            <div><label>Description</label><input type="text" id="newGroupDescription"></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createGroup()">Add Group</button></div>
+                        </div>
+                    </div>
+
+                    <div id="apane-external" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">External Submitter Accounts</h3>
+                        <p class="card-subtitle" style="margin-top:0;">External submitters from Client / PMC / Main Contractor / LDCs / Subcontractors. The login portal is being prepared. For now, this section creates the account and emails the credentials.</p>
+                        <div id="adminExternalContainer"><p style="color:#888;">Loading...</p></div>
+                        <h3 style="margin-top:30px;color:#1a1c23;font-size:16px;">Create a New External Submitter</h3>
+                        <p class="field-hint">A 12-character random password is generated and emailed.</p>
+                        <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1.2fr auto;">
+                            <div><label>Full name</label><input type="text" id="newExtFullName"></div>
+                            <div><label>Email</label><input type="email" id="newExtEmail"></div>
+                            <div><label>Organization</label><select id="newExtOrgId"></select></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createExternalSubmitter()">Create Account</button></div>
+                        </div>
+                    </div>
+
+                    <div id="apane-lookups" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Lookup Tables</h3>
+                        <p class="card-subtitle" style="margin-top:0;">Manage dropdown values used in the application form. Edit, add, or remove entries — or upload an Excel file for bulk updates.</p>
+                        <div id="lookupTableSelector" style="margin-bottom:20px;display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+                            <div><label style="font-size:13px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Select lookup table</label>
+                                <select id="lookupTableSelect" onchange="loadLookupTable(this.value)" style="padding:8px;min-width:220px;"></select>
+                            </div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;" onclick="openAddLookupValue()">+ Add Entry</button></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;background:#1565c0;" onclick="openImportLookup()">↑ Import Excel</button></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;background:#6a1b9a;" onclick="exportLookupTable()">↓ Export Excel</button></div>
+                        </div>
+                        <div id="lookupTableStatus" class="status-box hidden"></div>
+                        <table>
+                            <thead><tr><th>Value</th><th>Label</th><th>Order</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody id="lookupValuesTableBody"><tr><td colspan="5" style="text-align:center;color:#888;">Select a table to view</td></tr></tbody>
+                        </table>
+                    </div>
+
+                    <div id="apane-settings" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">System Settings</h3>
+                        <p class="card-subtitle" style="margin-top:0;">System-wide configuration. Changes take effect immediately.</p>
+                        <div id="adminSettingsContainer"><p style="color:#888;">Loading...</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalHost"></div>
+
+    <script>
+        // ==============================================
+        // CONFIG & STATE
+        // ==============================================
+        // API base URL is read from the <meta name="sms-api-base"> tag in <head>.
+        // If that tag is empty or missing, we fall back to the local dev default.
+        const API_BASE = (
+            (document.querySelector('meta[name="sms-api-base"]') || {}).content || ''
+        ).trim() || 'http://127.0.0.1:8000';
+        let currentUser = null;
+        let allUsers = [];
+        let allRolesCache = [];
+        let permissionCatalog = [];
+        let allOrganizations = [];
+        let workflowMode = 'security_only';
+        let formVariant = '';   // '', 'full', or 'brief'
+
+        // Country list — alphabetical, with Saudi Arabia first as a sensible default
+        const COUNTRY_LIST = [
+            "Saudi Arabia",
+            // Then the rest, alphabetical
+            "Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia","Austria","Azerbaijan",
+            "Bahrain","Bangladesh","Belarus","Belgium","Bolivia","Bosnia and Herzegovina","Brazil","Brunei","Bulgaria","Burkina Faso",
+            "Cambodia","Cameroon","Canada","Chad","Chile","China","Colombia","Comoros","Congo","Croatia","Cuba","Cyprus","Czech Republic",
+            "Denmark","Djibouti","Dominican Republic",
+            "Ecuador","Egypt","El Salvador","Eritrea","Estonia","Ethiopia",
+            "Fiji","Finland","France",
+            "Gabon","Gambia","Georgia","Germany","Ghana","Greece","Guatemala","Guinea","Guyana",
+            "Haiti","Honduras","Hungary",
+            "Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy",
+            "Jamaica","Japan","Jordan",
+            "Kazakhstan","Kenya","Kuwait","Kyrgyzstan",
+            "Laos","Latvia","Lebanon","Liberia","Libya","Lithuania","Luxembourg",
+            "Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Mauritania","Mauritius","Mexico","Moldova","Mongolia","Montenegro","Morocco","Mozambique","Myanmar",
+            "Namibia","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway",
+            "Oman",
+            "Pakistan","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal",
+            "Qatar",
+            "Romania","Russia","Rwanda",
+            "Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Sweden","Switzerland","Syria",
+            "Taiwan","Tajikistan","Tanzania","Thailand","Togo","Tunisia","Turkey","Turkmenistan",
+            "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan",
+            "Venezuela","Vietnam",
+            "Yemen",
+            "Zambia","Zimbabwe",
+            "Other"
+        ];
+
+        async function api(path, options = {}) {
+            const headers = Object.assign({}, options.headers || {});
+            return fetch(`${API_BASE}${path}`, Object.assign({}, options, {
+                headers, credentials: 'include',
+            }));
+        }
+
+        function switchView(viewName) {
+            ['nav-dashboard', 'nav-id-form', 'nav-admin'].forEach(id => document.getElementById(id).classList.remove('active'));
+            ['view-dashboard', 'view-id-form', 'view-admin'].forEach(id => document.getElementById(id).classList.add('hidden'));
+
+            if (viewName === 'dashboard') {
+                document.getElementById('nav-dashboard').classList.add('active');
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                document.getElementById('pageTitle').innerText = 'Action Dashboard';
+                document.getElementById('pageSubtitle').innerText = 'Review and manage pending security clearances and workflow approvals.';
+                fetchAllData();
+            } else if (viewName === 'id-form') {
+                document.getElementById('nav-id-form').classList.add('active');
+                document.getElementById('view-id-form').classList.remove('hidden');
+                document.getElementById('pageTitle').innerText = 'Application for Site Access ID';
+                document.getElementById('pageSubtitle').innerText = 'Choose your Company / Employer first - the form adapts to that selection.';
+            } else if (viewName === 'admin') {
+                document.getElementById('nav-admin').classList.add('active');
+                document.getElementById('view-admin').classList.remove('hidden');
+                document.getElementById('pageTitle').innerText = 'Administration';
+                document.getElementById('pageSubtitle').innerText = 'Manage users, roles, permissions, groups, and system settings.';
+                loadAdminAll();
+            }
+        }
+
+        // ==============================================
+        // v0.8 AUTHENTICATION
+        // ==============================================
+        function _hideAllAuthOverlays() {
+            ['authStaffOverlay','authExternalOverlay','authChangePasswordOverlay'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+        }
+        function showStaffLogin() {
+            _hideAllAuthOverlays();
+            document.getElementById('authStaffOverlay').style.display = 'flex';
+            document.body.classList.remove('app-loaded', 'external-mode');
+            document.getElementById('authStaffError').style.display = 'none';
+            setTimeout(() => document.getElementById('loginUsername').focus(), 50);
+        }
+        function showExternalLogin() {
+            _hideAllAuthOverlays();
+            document.getElementById('authExternalOverlay').style.display = 'flex';
+            document.body.classList.remove('app-loaded', 'external-mode');
+            document.getElementById('authExternalError').style.display = 'none';
+            setTimeout(() => document.getElementById('extLoginEmail').focus(), 50);
+        }
+        function showChangePassword() {
+            _hideAllAuthOverlays();
+            document.getElementById('authChangePasswordOverlay').style.display = 'flex';
+            document.body.classList.remove('app-loaded');
+            document.getElementById('authCpError').style.display = 'none';
+            document.getElementById('cpCurrent').value = '';
+            document.getElementById('cpNew').value = '';
+            document.getElementById('cpConfirm').value = '';
+            setTimeout(() => document.getElementById('cpCurrent').focus(), 50);
+        }
+        function showApp() {
+            _hideAllAuthOverlays();
+            document.body.classList.add('app-loaded');
+        }
+
+        async function doStaffLogin() {
+            const errEl = document.getElementById('authStaffError');
+            const btn = document.getElementById('authStaffSubmit');
+            errEl.style.display = 'none';
+            btn.disabled = true; btn.textContent = 'Signing in...';
+            try {
+                const r = await api('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        username: document.getElementById('loginUsername').value.trim(),
+                        password: document.getElementById('loginPassword').value,
+                    }),
+                });
+                const data = await r.json();
+                if (!r.ok) { throw new Error(data.detail || 'Login failed'); }
+                document.getElementById('loginPassword').value = '';
+                await afterSuccessfulLogin();
+            } catch (e) {
+                errEl.textContent = e.message || 'Login failed';
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Sign in';
+            }
+        }
+
+        async function doExternalLogin() {
+            const errEl = document.getElementById('authExternalError');
+            const btn = document.getElementById('authExternalSubmit');
+            errEl.style.display = 'none';
+            btn.disabled = true; btn.textContent = 'Signing in...';
+            try {
+                const r = await api('/api/v1/auth/external-login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: document.getElementById('extLoginEmail').value.trim(),
+                        password: document.getElementById('extLoginPassword').value,
+                    }),
+                });
+                const data = await r.json();
+                if (!r.ok) { throw new Error(data.detail || 'Login failed'); }
+                document.getElementById('extLoginPassword').value = '';
+                await afterSuccessfulLogin();
+            } catch (e) {
+                errEl.textContent = e.message || 'Login failed';
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Sign in';
+            }
+        }
+
+        async function doChangePassword() {
+            const errEl = document.getElementById('authCpError');
+            const btn = document.getElementById('authCpSubmit');
+            errEl.style.display = 'none';
+            const cur = document.getElementById('cpCurrent').value;
+            const nw = document.getElementById('cpNew').value;
+            const cf = document.getElementById('cpConfirm').value;
+            if (nw.length < 8) { errEl.textContent = 'New password must be at least 8 characters.'; errEl.style.display='block'; return; }
+            if (nw !== cf) { errEl.textContent = 'New password and confirmation do not match.'; errEl.style.display='block'; return; }
+            if (nw === cur) { errEl.textContent = 'New password must be different from your current password.'; errEl.style.display='block'; return; }
+            btn.disabled = true; btn.textContent = 'Changing...';
+            try {
+                const r = await api('/api/v1/auth/change-password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ current_password: cur, new_password: nw }),
+                });
+                const data = await r.json();
+                if (!r.ok) { throw new Error(data.detail || 'Failed to change password'); }
+                await afterSuccessfulLogin();
+            } catch (e) {
+                errEl.textContent = e.message || 'Failed to change password';
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Change password';
+            }
+        }
+
+        async function doLogout() {
+            try { await api('/api/v1/auth/logout', { method: 'POST' }); } catch (e) {}
+            currentUser = null;
+            showStaffLogin();
+        }
+
+        async function loadCurrentUser() {
+            const r = await api('/api/v1/auth/me');
+            if (!r.ok) { return null; }
+            const data = await r.json();
+            if (!data.logged_in) return null;
+            // Normalize so that the rest of the app can look at currentUser.user_id, .permissions, .role_name, .full_name
+            return {
+                principal_type:       data.principal_type,
+                principal_id:         data.principal_id,
+                user_id:              data.principal_id,           // back-compat
+                full_name:            data.full_name,
+                email:                data.email,
+                must_change_password: data.must_change_password,
+                permissions:          data.permissions || [],
+                role_id:              data.role_id || null,
+                role_name:            data.role_name || (data.principal_type === 'external' ? 'External Submitter' : null),
+                organization_id:      data.organization_id || null,
+                organization_name:    data.organization_name || null,
+                submitter_group:      data.submitter_group || null,
+            };
+        }
+
+        async function afterSuccessfulLogin() {
+            currentUser = await loadCurrentUser();
+            if (!currentUser) { showStaffLogin(); return; }
+            if (currentUser.must_change_password) { showChangePassword(); return; }
+            // Update user-chip
+            document.getElementById('loggedInName').textContent = currentUser.full_name || '—';
+            const roleText = currentUser.role_name || (currentUser.principal_type === 'external' ? `External · ${currentUser.organization_name || ''}` : '');
+            document.getElementById('loggedInRole').textContent = roleText;
+
+            // Set up nav based on principal type
+            if (currentUser.principal_type === 'external') {
+                document.body.classList.add('external-mode');
+                // External submitters see only the form
+                document.getElementById('nav-dashboard').classList.add('hidden');
+                document.getElementById('nav-id-form').classList.remove('hidden');
+                document.getElementById('nav-admin').classList.add('hidden');
+            } else {
+                document.body.classList.remove('external-mode');
+                document.getElementById('nav-dashboard').classList.remove('hidden');
+                document.getElementById('nav-id-form').classList.remove('hidden');
+                if (userCan('manage_users') || userCan('manage_external_users') || userCan('manage_system_settings')) {
+                    document.getElementById('nav-admin').classList.remove('hidden');
+                } else {
+                    document.getElementById('nav-admin').classList.add('hidden');
+                }
+            }
+
+            await loadPermissionCatalog();
+            await loadOrganizations();
+            await loadFormLookups();
+            await loadWorkflowMode();
+            // Pre-load staff list (for displaying acted_by names etc.) when staff
+            if (currentUser.principal_type === 'staff') {
+                await loadUsers();
+            } else {
+                allUsers = [];
+            }
+            // Apply external-submitter restrictions to the form
+            applyExternalSubmitterFormLock();
+
+            // Choose initial view
+            if (currentUser.principal_type === 'external') {
+                switchView('id-form');
+                // Auto-select their company (locked)
+                if (currentUser.organization_name) {
+                    const sel = document.getElementById('companyName');
+                    if (sel) {
+                        sel.value = currentUser.organization_name;
+                        if (typeof onCompanyChange === 'function') onCompanyChange();
+                    }
+                }
+            } else {
+                switchView('dashboard');
+            }
+            showApp();
+        }
+
+        function applyExternalSubmitterFormLock() {
+            // Lock the company dropdown for external submitters
+            const sel = document.getElementById('companyName');
+            if (!sel) return;
+            if (currentUser && currentUser.principal_type === 'external') {
+                sel.disabled = true;
+                sel.style.background = '#f0f0f0';
+            } else {
+                sel.disabled = false;
+                sel.style.background = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            populateCountryDropdown();
+            applyFormVariant('');
+            // Try to resume an existing session before showing login
+            const me = await loadCurrentUser();
+            if (me) {
+                currentUser = me;
+                if (me.must_change_password) { showChangePassword(); }
+                else { await afterSuccessfulLogin(); }
+            } else {
+                showStaffLogin();
+            }
+        });
+
+        function populateCountryDropdown() {
+            const sel = document.getElementById('nationality');
+            if (!sel) return;
+            COUNTRY_LIST.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.textContent = c;
+                sel.appendChild(opt);
+            });
+        }
+
+        async function loadPermissionCatalog() {
+            try {
+                const r = await api('/api/v1/permissions');
+                if (!r.ok) return;
+                permissionCatalog = (await r.json()).permissions || [];
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadOrganizations() {
+            try {
+                const r = await api('/api/v1/organizations');
+                if (!r.ok) return;
+                allOrganizations = (await r.json()).organizations || [];
+            } catch (e) { console.error(e); }
+        }
+
+        let lookupCompanies = [];
+        let lookupSubcontractors = [];
+
+        async function loadFormLookups() {
+            try {
+                const r = await api('/api/v1/lookups');
+                if (!r.ok) return;
+                const data = await r.json();
+                (data.lookups || []).forEach(lt => {
+                    if (lt.name === 'companies') lookupCompanies = lt.values || [];
+                    if (lt.name === 'subcontractors') lookupSubcontractors = lt.values || [];
+                });
+                // Populate company dropdown from lookup
+                const companySel = document.getElementById('companyName');
+                if (companySel) {
+                    companySel.innerHTML = '<option value="" disabled selected>Select company</option>';
+                    lookupCompanies.forEach(c => {
+                        companySel.innerHTML += `<option value="${escapeHtml(c.value)}">${escapeHtml(c.label || c.value)}</option>`;
+                    });
+                }
+                // Populate subcontractor dropdown from lookup
+                const subconSel = document.getElementById('subcontractorName');
+                if (subconSel) {
+                    subconSel.innerHTML = '<option value="" disabled selected>Select subcontractor</option>';
+                    lookupSubcontractors.forEach(s => {
+                        subconSel.innerHTML += `<option value="${escapeHtml(s.value)}">${escapeHtml(s.label || s.value)}</option>`;
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadWorkflowMode() {
+            try {
+                const r = await api('/api/v1/settings');
+                if (!r.ok) return;
+                workflowMode = ((await r.json()).settings || {}).workflow_mode || 'security_only';
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadUsers() {
+            try {
+                const r = await api('/api/v1/users');
+                if (!r.ok) throw new Error('Failed to fetch users');
+                allUsers = (await r.json()).users || [];
+            } catch (e) { console.error(e); allUsers = []; }
+        }
+
+        function userCan(permKey) {
+            return !!(currentUser && currentUser.permissions && currentUser.permissions.includes(permKey));
+        }
+
+        // ==============================================
+        // FORM VARIANT LOGIC
+        // ==============================================
+        function onCompanyChange() {
+            const company = document.getElementById('companyName').value;
+            // Subcontractor (any) -> full form. Anything else -> brief form.
+            const variant = (company === 'Subcontractor (other)') ? 'full' : 'brief';
+            applyFormVariant(variant);
+        }
+
+        function applyFormVariant(variant) {
+            formVariant = variant;
+            const briefEls = document.querySelectorAll('.brief-only');
+            const fullEls  = document.querySelectorAll('.full-only');
+            const banner   = document.getElementById('variantBanner');
+
+            if (variant === 'brief') {
+                briefEls.forEach(el => el.classList.remove('hidden'));
+                fullEls.forEach(el => el.classList.add('hidden'));
+                banner.className = 'variant-banner brief';
+                banner.innerHTML = '<strong>Brief form</strong> &middot; This applies to Client / PMC / Main Contractor / LDC personnel. Fewer fields and fewer attachments are required.';
+                // Clear any data the user typed into now-hidden fields, so it doesn't get submitted by mistake
+                clearHiddenFields();
+                // Required attribute management - drop required from full-only fields
+                setRequiredAttribute('.full-only', false);
+                setRequiredAttribute('.brief-only', true);
+                // Brief form: ID Copy is the only required upload
+                document.getElementById('idCopyUpload').required = true;
+                document.getElementById('insuranceUpload').required = false;
+                document.getElementById('legalAgreementUpload').required = false;
+            } else if (variant === 'full') {
+                fullEls.forEach(el => el.classList.remove('hidden'));
+                briefEls.forEach(el => el.classList.add('hidden'));
+                banner.className = 'variant-banner full';
+                banner.innerHTML = '<strong>Comprehensive form</strong> &middot; This applies to subcontractor personnel. All fields and the full set of attachments are required.';
+                clearHiddenFields();
+                setRequiredAttribute('.full-only', true);
+                setRequiredAttribute('.brief-only', false);
+                // Full form: ID Copy + Insurance required; legal agreement only if 3rd-party sponsor
+                document.getElementById('idCopyUpload').required = true;
+                document.getElementById('insuranceUpload').required = true;
+                handleSponsorChange();   // re-evaluate legal-agreement requirement
+                handleWhatsAppChange();  // re-evaluate whatsapp number requirement
+            } else {
+                // No company chosen yet: keep all variant-specific fields hidden, banner empty
+                briefEls.forEach(el => el.classList.add('hidden'));
+                fullEls.forEach(el => el.classList.add('hidden'));
+                banner.className = 'variant-banner empty';
+                banner.innerHTML = '<span>Choose a Company / Employer below to see the appropriate form fields.</span>';
+                setRequiredAttribute('.full-only', false);
+                setRequiredAttribute('.brief-only', false);
+            }
+        }
+
+        function setRequiredAttribute(selector, required) {
+            // For each element matching the selector, make every input/select inside it required (or not).
+            // Skip the WhatsApp wrapper - its 'required' is managed by handleWhatsAppChange().
+            // Skip the legal agreement wrapper - managed by handleSponsorChange().
+            document.querySelectorAll(selector).forEach(el => {
+                const inputs = el.querySelectorAll('input, select');
+                inputs.forEach(inp => {
+                    if (inp.id === 'whatsappNo' || inp.id === 'legalAgreementUpload') return;
+                    if (inp.type === 'checkbox') return;
+                    inp.required = required;
+                });
+            });
+        }
+
+        function clearHiddenFields() {
+            // Clear values in any field that is currently hidden, so they don't sneak into submissions.
+            document.querySelectorAll('.brief-only.hidden input, .brief-only.hidden select, .full-only.hidden input, .full-only.hidden select').forEach(inp => {
+                if (inp.type === 'checkbox') inp.checked = false;
+                else if (inp.type === 'file') inp.value = '';
+                else inp.value = '';
+            });
+        }
+
+        function handleSponsorChange() {
+            // Only meaningful in full-form context
+            if (formVariant !== 'full') return;
+            const isThirdParty = document.getElementById('sponsorIsThirdParty').checked;
+            const wrapper = document.getElementById('legalAgreementWrapper');
+            const upload  = document.getElementById('legalAgreementUpload');
+            if (isThirdParty) { wrapper.classList.remove('hidden'); upload.required = true; }
+            else { wrapper.classList.add('hidden'); upload.required = false; upload.value = ""; }
+        }
+
+        function handleWhatsAppChange() {
+            if (formVariant !== 'full') return;
+            const isSame = document.getElementById('sameAsWhatsapp').checked;
+            const waWrapper = document.getElementById('whatsappWrapper');
+            const waInput   = document.getElementById('whatsappNo');
+            if (isSame) { waWrapper.classList.add('hidden'); waInput.required = false; waInput.value = ""; }
+            else { waWrapper.classList.remove('hidden'); waInput.required = true; }
+        }
+
+        document.getElementById('idApplicationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!formVariant) {
+                alert('Please select a Company / Employer first.');
+                return;
+            }
+            if (!this.checkValidity()) { this.reportValidity(); return; }
+
+            const submitBtn = this.querySelector('.btn-submit');
+            const statusDiv = document.getElementById('formStatusMessage');
+            statusDiv.classList.add('hidden');
+            submitBtn.disabled = true; submitBtn.innerText = "Submitting...";
+
+            const fd = new FormData();
+            fd.append('form_variant',           formVariant);
+            fd.append('full_name',              document.getElementById('fullName').value.trim());
+            fd.append('organization',           document.getElementById('companyName').value);
+            fd.append('email',                  document.getElementById('email').value.trim());
+            fd.append('mobile_number',          document.getElementById('mobileNo').value.trim());
+            fd.append('gov_id_type',            'Iqama');
+            fd.append('gov_id_number',          document.getElementById('iqamaNumber').value.trim());
+            fd.append('blood_type',             document.getElementById('bloodType').value);
+            fd.append('employee_number',        document.getElementById('employeeNo').value.trim() || 'N/A');
+            fd.append('subcontractor',          document.getElementById('subcontractorName').value || '');
+            // submitted_by_user_id is now derived from the session cookie on the server.
+
+            if (formVariant === 'full') {
+                const sameAsWa = document.getElementById('sameAsWhatsapp').checked;
+                const mobile = document.getElementById('mobileNo').value.trim();
+                const finalWhatsapp = sameAsWa ? mobile : document.getElementById('whatsappNo').value.trim();
+                fd.append('whatsapp_number',         finalWhatsapp);
+                fd.append('job_title',               document.getElementById('tradeProject').value.trim());
+                fd.append('is_third_party_sponsor',  document.getElementById('sponsorIsThirdParty').checked);
+            } else {
+                // brief
+                fd.append('whatsapp_number',         document.getElementById('mobileNo').value.trim());  // reuse mobile
+                fd.append('job_title',               document.getElementById('reportsTo').value.trim() || ''); // brief has no Trade; using reports_to also stored separately
+                fd.append('is_third_party_sponsor',  false);
+                fd.append('date_joined',             document.getElementById('dateJoined').value || '');
+                fd.append('reports_to',              document.getElementById('reportsTo').value.trim());
+            }
+
+            const idFile    = document.getElementById('idCopyUpload').files[0];
+            const insFile   = document.getElementById('insuranceUpload').files[0];
+            const photoFile = document.getElementById('photoUpload').files[0];
+            const legalFile = document.getElementById('legalAgreementUpload').files[0];
+            if (idFile)    fd.append('id_copy', idFile);
+            if (formVariant === 'full' && insFile)   fd.append('insurance', insFile);
+            if (formVariant === 'full' && photoFile) fd.append('photo', photoFile);
+            if (formVariant === 'full' && legalFile) fd.append('legal_agreement', legalFile);
+
+            try {
+                const response = await api('/api/v1/applications/submit', { method: 'POST', body: fd });
+                if (response.ok) {
+                    const result = await response.json();
+                    statusDiv.innerText = `✔ Success! Application submitted. Tracking ID: #${result.application_id}`;
+                    statusDiv.className = "inline-status success-msg";
+                    statusDiv.classList.remove('hidden');
+                    this.reset();
+                    applyFormVariant('');   // reset variant state
+                } else {
+                    const result = await response.json().catch(() => ({ detail: response.statusText }));
+                    statusDiv.innerText = `✗ Error: ${result.detail || 'Unknown error'}`;
+                    statusDiv.className = "inline-status error-msg";
+                    statusDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                statusDiv.innerText = `✗ Connection failed. Is the FastAPI server running?`;
+                statusDiv.className = "inline-status error-msg";
+                statusDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false; submitBtn.innerText = "Submit Application";
+            }
+        });
+
+        // ==============================================
+        // DASHBOARD (unchanged from v0.5)
+        // ==============================================
+        async function fetchAllData() {
+            await loadWorkflowMode();
+            fetchPendingApplications();
+            fetchAllApplications();
+            fetchHistory();
+        }
+
+        async function fetchPendingApplications() {
+            const tableBody = document.getElementById('applicationsTableBody');
+            try {
+                const response = await api('/api/v1/applications/pending');
+                if (!response.ok) throw new Error('Backend error');
+                const data = await response.json();
+                tableBody.innerHTML = '';
+                if (!data.pending_applications || data.pending_applications.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888;">No pending applications require your attention.</td></tr>`;
+                    return;
+                }
+                data.pending_applications.forEach(app => {
+                    const dateString = new Date(app.created_at).toLocaleString();
+                    let badgeClass = "badge-pending";
+                    let actionButtons = `<button class="btn-action btn-view" onclick="openViewModal(${app.application_id})">View</button>`;
+                    let canActHere = false;
+
+                    if (app.workflow_state === 'Pending Security Clearance') {
+                        badgeClass = "badge-security";
+                        if (userCan('approve_security')) {
+                            canActHere = true;
+                            actionButtons += `
+                                <button class="btn-action btn-approve" onclick="updateStatus(${app.application_id}, 'Approved')">Approve</button>
+                                <button class="btn-action btn-reject" onclick="openRejectModal(${app.application_id})">Reject</button>
+                            `;
+                        }
+                    } else if (app.workflow_state === 'Pending HR Verification') {
+                        if (userCan('approve_hr')) {
+                            canActHere = true;
+                            actionButtons += `
+                                <button class="btn-action btn-approve" onclick="updateStatus(${app.application_id}, 'Pending Security Clearance')">Approve (HR)</button>
+                                <button class="btn-action btn-reject" onclick="openRejectModal(${app.application_id})">Reject</button>
+                            `;
+                        }
+                    }
+                    if (!canActHere) {
+                        const roleLabel = currentUser ? (currentUser.role_name || 'this role') : 'this user';
+                        actionButtons += `<span class="no-perm-text">(read-only for ${escapeHtml(roleLabel)})</span>`;
+                    }
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><a class="app-id-link" onclick="openViewModal(${app.application_id})">#${app.application_id}</a></td>
+                        <td>${dateString}</td>
+                        <td>${escapeHtml(app.full_name)}</td>
+                        <td>${escapeHtml(app.organization)}</td>
+                        <td><span class="badge ${badgeClass}">${escapeHtml(app.workflow_state)}</span></td>
+                        <td>${actionButtons}</td>`;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error(error);
+                tableBody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Error: Is the Python server running?</td></tr>`;
+            }
+        }
+
+        async function fetchAllApplications() {
+            const tableBody = document.getElementById('allApplicationsTableBody');
+            try {
+                const response = await api('/api/v1/applications');
+                if (!response.ok) throw new Error('Backend error');
+                const data = await response.json();
+                tableBody.innerHTML = '';
+                if (!data.applications || data.applications.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888;">No applications yet.</td></tr>`;
+                    return;
+                }
+                data.applications.forEach(app => {
+                    const dateString = new Date(app.created_at).toLocaleString();
+                    const badgeClass = stateBadgeClass(app.workflow_state);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><a class="app-id-link" onclick="openViewModal(${app.application_id})">#${app.application_id}</a></td>
+                        <td>${dateString}</td>
+                        <td>${escapeHtml(app.full_name)}</td>
+                        <td>${escapeHtml(app.organization)}</td>
+                        <td><span class="badge ${badgeClass}">${escapeHtml(app.workflow_state)}</span></td>
+                        <td><button class="btn-action btn-view" onclick="openViewModal(${app.application_id})">View</button></td>`;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                tableBody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Failed to load applications.</td></tr>`;
+            }
+        }
+
+        function stateBadgeClass(state) {
+            return (
+                state === 'Approved' ? 'badge-approved' :
+                state === 'Rejected' ? 'badge-rejected' :
+                state === 'Pending Security Clearance' ? 'badge-security' : 'badge-pending'
+            );
+        }
+
+        async function fetchHistory() {
+            const container = document.getElementById('historyGroupedBody');
+            try {
+                const response = await api('/api/v1/history');
+                if (!response.ok) throw new Error('Backend error');
+                const data = await response.json();
+                const events = data.history || [];
+                if (events.length === 0) {
+                    container.innerHTML = `<p style="text-align: center; color: #888;">No history records found.</p>`;
+                    return;
+                }
+                const byApp = {};
+                events.forEach(ev => {
+                    if (!byApp[ev.application_id]) byApp[ev.application_id] = [];
+                    byApp[ev.application_id].push(ev);
+                });
+                const groups = Object.entries(byApp).map(([appId, evs]) => {
+                    evs.sort((a, b) => new Date(b.action_timestamp) - new Date(a.action_timestamp));
+                    return { appId: parseInt(appId, 10), events: evs, latest: evs[0], latestTime: new Date(evs[0].action_timestamp).getTime() };
+                });
+                groups.sort((a, b) => b.latestTime - a.latestTime);
+
+                container.innerHTML = '';
+                groups.forEach(g => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'audit-group';
+                    const latestDate = new Date(g.latest.action_timestamp).toLocaleString();
+                    const eventCount = g.events.length;
+                    const eventsHtml = g.events.map(ev => {
+                        const dt = new Date(ev.action_timestamp).toLocaleString();
+                        const prev = ev.previous_state || 'Draft';
+                        return `<div class="audit-event">
+                            <span class="audit-event-time">${dt}</span>
+                            <span>${escapeHtml(ev.action_taken)}</span>
+                            <span>${escapeHtml(ev.acted_by || '-')}</span>
+                            <span><span class="badge badge-history">${escapeHtml(prev)} ➔ ${escapeHtml(ev.new_state)}</span></span>
+                            <span>${ev.comments ? `<span class="comments-text">"${escapeHtml(ev.comments)}"</span>` : '-'}</span>
+                        </div>`;
+                    }).join('');
+                    groupDiv.innerHTML = `
+                        <div class="audit-group-header" onclick="this.parentNode.classList.toggle('expanded')">
+                            <span class="audit-group-summary">
+                                <span class="caret">▶</span>
+                                &nbsp;<a class="app-id-link" onclick="event.stopPropagation(); openViewModal(${g.appId})">#${g.appId}</a>
+                                &nbsp;&middot;&nbsp; <strong>${escapeHtml(g.latest.action_taken)}</strong> by ${escapeHtml(g.latest.acted_by || '-')}
+                                &nbsp;&middot;&nbsp; ${eventCount} event${eventCount === 1 ? '' : 's'}
+                            </span>
+                            <span style="color:#888; font-size: 12px;">${latestDate}</span>
+                        </div>
+                        <div class="audit-events">${eventsHtml}</div>`;
+                    container.appendChild(groupDiv);
+                });
+            } catch (error) {
+                container.innerHTML = `<p style="color:red; text-align: center;">Failed to load history.</p>`;
+            }
+        }
+
+        async function updateStatus(applicationId, newState, comment = "Approved from dashboard") {
+            if (!currentUser) { alert('Please select an acting user first.'); return; }
+            const statusDiv = document.getElementById('dashStatusMessage');
+            const payload = { new_state: newState, comments: comment };
+            try {
+                const response = await api(`/api/v1/applications/${applicationId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    statusDiv.innerText = `Success: Application #${applicationId} moved to ${newState}`;
+                    statusDiv.className = "status-box success-msg";
+                    statusDiv.classList.remove('hidden');
+                    fetchAllData();
+                } else {
+                    const result = await response.json().catch(() => ({ detail: response.statusText }));
+                    alert(`Error updating status: ${result.detail || 'Unknown error'}`);
+                }
+            } catch (error) {
+                alert('Connection error while updating status.');
+            }
+            setTimeout(() => { statusDiv.classList.add('hidden'); }, 4000);
+        }
+
+        async function exportToExcel() {
+            try {
+                const r = await api('/api/v1/applications/export');
+                if (!r.ok) {
+                    alert('Failed to export: ' + r.status);
+                    return;
+                }
+                const blob = await r.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                a.download = `taawon_p3_applications_${ts}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('Export failed: ' + (e.message || e));
+            }
+        }
+
+        async function downloadAttachment(applicationId, attachmentId, originalName) {
+            try {
+                const r = await api(`/api/v1/applications/${applicationId}/attachment/${attachmentId}`);
+                if (!r.ok) {
+                    let msg = 'Failed to download attachment';
+                    try { const j = await r.json(); msg = j.detail || msg; } catch (e) {}
+                    alert(msg);
+                    return;
+                }
+                const blob = await r.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = originalName || 'attachment';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('Download failed: ' + (e.message || e));
+            }
+        }
+
+        // ==============================================
+        // VIEW APPLICATION MODAL (with edit support)
+        // ==============================================
+        let currentlyViewingAppId = null;
+        let currentEditMode = false;
+
+        async function openViewModal(applicationId) {
+            currentlyViewingAppId = applicationId;
+            currentEditMode = false;
+            const host = document.getElementById('modalHost');
+            host.innerHTML = `
+                <div class="modal-backdrop" onclick="if(event.target===this) closeModal()">
+                  <div class="modal">
+                    <div class="modal-header">
+                        <h2>Application #${applicationId}</h2>
+                        <div class="modal-header-actions">
+                            <span id="modalEditBtnSlot"></span>
+                            <button class="modal-close" onclick="closeModal()">&times;</button>
+                        </div>
+                    </div>
+                    <div class="modal-body" id="viewModalBody">Loading...</div>
+                  </div>
+                </div>`;
+            await refreshViewModalContent();
+        }
+
+        async function refreshViewModalContent() {
+            try {
+                const r = await api(`/api/v1/applications/${currentlyViewingAppId}`);
+                if (!r.ok) throw new Error('Failed to load');
+                const data = await r.json();
+                document.getElementById('viewModalBody').innerHTML = renderApplicationDetail(data);
+                renderEditButton(data);
+            } catch (e) {
+                document.getElementById('viewModalBody').innerHTML = `<div class="status-box error-msg">Failed to load: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function renderEditButton(data) {
+            const slot = document.getElementById('modalEditBtnSlot');
+            if (!slot) return;
+            const a = data.application;
+            const isPending = a.workflow_state === 'Pending Security Clearance' || a.workflow_state === 'Pending HR Verification';
+            if (!userCan('edit_application') || !isPending) { slot.innerHTML = ''; return; }
+            if (currentEditMode) {
+                slot.innerHTML = `
+                    <button class="btn-action btn-save" onclick="saveEdits()">Save changes</button>
+                    <button class="btn-action btn-edit" onclick="cancelEdits()">Cancel</button>`;
+            } else {
+                slot.innerHTML = `<button class="btn-action btn-edit" onclick="enterEditMode()">✎ Edit fields</button>`;
+            }
+        }
+
+        function enterEditMode() { currentEditMode = true; refreshViewModalContent(); }
+        function cancelEdits() { currentEditMode = false; refreshViewModalContent(); }
+
+        async function saveEdits() {
+            const fields = ['full_name','job_title','employee_number','organization','subcontractor',
+                            'gov_id_type','gov_id_number','blood_type','mobile_number','whatsapp_number','email','reports_to'];
+            const payload = {};
+            fields.forEach(f => {
+                const el = document.getElementById('edit_' + f);
+                if (el) payload[f] = el.value.trim() || null;
+            });
+            const sponsorEl = document.getElementById('edit_is_third_party_sponsor');
+            if (sponsorEl) payload.is_third_party_sponsor = sponsorEl.checked;
+            const dateEl = document.getElementById('edit_date_joined');
+            if (dateEl) payload.date_joined = dateEl.value || null;
+            try {
+                const r = await api(`/api/v1/applications/${currentlyViewingAppId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!r.ok) {
+                    const e = await r.json().catch(() => ({}));
+                    alert(`Failed to save: ${e.detail || r.statusText}`);
+                    return;
+                }
+                currentEditMode = false;
+                await refreshViewModalContent();
+                fetchAllData();
+            } catch (e) { alert(`Error: ${e.message}`); }
+        }
+
+        function detailField(label, fieldName, value, opts = {}) {
+            if (currentEditMode && !opts.readOnly) {
+                if (opts.checkbox) {
+                    return `<dt>${label}</dt><dd><input type="checkbox" id="edit_${fieldName}" ${value ? 'checked' : ''}></dd>`;
+                }
+                if (opts.date) {
+                    const d = value ? (typeof value === 'string' ? value.slice(0,10) : new Date(value).toISOString().slice(0,10)) : '';
+                    return `<dt>${label}</dt><dd><input type="date" id="edit_${fieldName}" value="${escapeHtml(d)}"></dd>`;
+                }
+                return `<dt>${label}</dt><dd><input type="text" id="edit_${fieldName}" value="${escapeHtml(value || '')}"></dd>`;
+            }
+            let display;
+            if (opts.checkbox) display = value ? 'Yes' : 'No';
+            else if (opts.date) display = value ? (typeof value === 'string' ? value.slice(0,10) : new Date(value).toLocaleDateString()) : '-';
+            else display = value || '-';
+            return `<dt>${label}</dt><dd>${escapeHtml(display)}</dd>`;
+        }
+
+        function renderApplicationDetail(data) {
+            const a = data.application;
+            const badgeClass = stateBadgeClass(a.workflow_state);
+
+            let attHtml = '';
+            if (data.attachments && data.attachments.length) {
+                attHtml = data.attachments.map(at => {
+                    const sizeKb = at.file_size_bytes ? (at.file_size_bytes / 1024).toFixed(1) + ' KB' : '';
+                    const safeName = escapeHtml(at.original_filename || 'file');
+                    return `<a class="attachment-link" href="javascript:void(0)" onclick="previewAttachment(${a.application_id}, ${at.attachment_id}, '${safeName.replace(/'/g, "\\'")}', '${at.mime_type || ''}')">📎 ${escapeHtml(prettyAttachmentType(at.attachment_type))}: ${safeName}${sizeKb ? `<span style="opacity:0.7;font-weight:normal;"> (${sizeKb})</span>` : ''}</a>`;
+                }).join('');
+            } else { attHtml = `<span class="no-perm-text">No attachments uploaded.</span>`; }
+
+            const histHtml = (data.history || []).map(h => {
+                const dt = new Date(h.action_timestamp).toLocaleString();
+                const prev = h.previous_state || 'Draft';
+                const actBadge = h.action_taken === 'Edit' ? 'badge-edit' : 'badge-history';
+                return `<tr>
+                          <td>${dt}</td>
+                          <td><span class="badge ${actBadge}">${escapeHtml(h.action_taken)}</span></td>
+                          <td>${escapeHtml(h.acted_by || '-')}</td>
+                          <td><span class="badge badge-history">${escapeHtml(prev)} ➔ ${escapeHtml(h.new_state)}</span></td>
+                          <td>${h.comments ? `<span class="comments-text">"${escapeHtml(h.comments)}"</span>` : '-'}</td>
+                        </tr>`;
+            }).join('');
+
+            const notifHtml = (data.notifications || []).length
+              ? data.notifications.map(n => {
+                    const dt = new Date(n.created_at).toLocaleString();
+                    const statusColor = (n.delivery_status === 'sent' ? '#2e7d32' : n.delivery_status === 'failed' ? '#c62828' : n.delivery_status === 'pending_whatsapp_api' ? '#e65100' : '#888');
+                    return `<tr><td>${dt}</td><td><strong>${escapeHtml(n.channel)}</strong></td><td>${escapeHtml(n.recipient || '-')}</td><td style="color:${statusColor};font-weight:600;">${escapeHtml(n.delivery_status)}</td><td>${escapeHtml(n.error_message || '-')}</td></tr>`;
+                }).join('')
+              : `<tr><td colspan="5" style="text-align:center;color:#888;">No notifications recorded.</td></tr>`;
+
+            const editingNotice = currentEditMode
+                ? `<div class="status-box warning-msg" style="margin-bottom: 14px;">⚠ Edit mode - change fields below and click 'Save changes' at the top right.</div>`
+                : '';
+
+            const variantTag = a.form_variant === 'brief'
+                ? '<span class="group-tag group-tag-1" style="margin-left: 8px;">Brief form</span>'
+                : (a.form_variant === 'full' ? '<span class="group-tag group-tag-2" style="margin-left: 8px;">Comprehensive form</span>' : '');
+
+            return `
+                ${editingNotice}
+                <div class="section-heading">Status</div>
+                <p><span class="badge ${badgeClass}">${escapeHtml(a.workflow_state)}</span>${variantTag}</p>
+                <div class="section-heading">Applicant Details</div>
+                <dl class="detail-grid">
+                    ${detailField('Full Name', 'full_name', a.full_name)}
+                    ${detailField('Job / Trade', 'job_title', a.job_title)}
+                    ${detailField('Employee No.', 'employee_number', a.employee_number)}
+                    ${detailField('Organization', 'organization', a.organization)}
+                    ${detailField('Subcontractor', 'subcontractor', a.subcontractor)}
+                    ${detailField('Date Joined', 'date_joined', a.date_joined, { date: true })}
+                    ${detailField('Reports To', 'reports_to', a.reports_to)}
+                    ${detailField('Gov ID Type', 'gov_id_type', a.gov_id_type)}
+                    ${detailField('Gov ID Number', 'gov_id_number', a.gov_id_number)}
+                    ${detailField('Blood Type', 'blood_type', a.blood_type)}
+                    ${detailField('Mobile', 'mobile_number', a.mobile_number)}
+                    ${detailField('WhatsApp', 'whatsapp_number', a.whatsapp_number)}
+                    ${detailField('Email', 'email', a.email)}
+                    ${detailField('3rd-Party Sponsor', 'is_third_party_sponsor', a.is_third_party_sponsor, { checkbox: true })}
+                    ${detailField('Submitted By', 'submitter_name', a.submitter_name, { readOnly: true })}
+                    ${detailField('Submitted At', 'created_at', a.created_at ? new Date(a.created_at).toLocaleString() : '', { readOnly: true })}
+                </dl>
+                <div class="section-heading">Attachments</div>
+                <div>${attHtml}</div>
+                <div class="section-heading">Workflow History</div>
+                <table>
+                    <thead><tr><th>Time</th><th>Action</th><th>By</th><th>State Change</th><th>Comments</th></tr></thead>
+                    <tbody>${histHtml || '<tr><td colspan="5" style="text-align:center;color:#888;">No history.</td></tr>'}</tbody>
+                </table>
+                <div class="section-heading">Notifications Log</div>
+                <table>
+                    <thead><tr><th>Time</th><th>Channel</th><th>Recipient</th><th>Status</th><th>Error</th></tr></thead>
+                    <tbody>${notifHtml}</tbody>
+                </table>
+            `;
+        }
+
+        function prettyAttachmentType(t) {
+            return ({ id_copy: 'ID Copy', insurance: 'Insurance', photo: 'Personal Photo', legal_agreement: 'Legal Agreement' })[t] || t;
+        }
+
+        function closeModal() {
+            currentlyViewingAppId = null;
+            currentEditMode = false;
+            document.getElementById('modalHost').innerHTML = '';
+        }
+
+        function openRejectModal(applicationId) {
+            if (!currentUser) { alert('Please select an acting user first.'); return; }
+            const host = document.getElementById('modalHost');
+            host.innerHTML = `
+                <div class="modal-backdrop" onclick="if(event.target===this) closeModal()">
+                  <div class="modal" style="max-width:540px;">
+                    <div class="modal-header">
+                        <h2>Reject Application #${applicationId}</h2>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="margin-top:0;">Please provide a reason for rejection. This will be recorded and sent to the applicant by email and WhatsApp.</p>
+                        <textarea id="rejectReason" class="reject-reason-textarea" placeholder="e.g. Insurance certificate has expired - please upload a current one and re-submit."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                        <button class="btn-confirm-reject" onclick="confirmReject(${applicationId})">Confirm Rejection</button>
+                    </div>
+                  </div>
+                </div>`;
+            setTimeout(() => { const ta = document.getElementById('rejectReason'); if (ta) ta.focus(); }, 50);
+        }
+
+        async function confirmReject(applicationId) {
+            const reason = (document.getElementById('rejectReason').value || '').trim();
+            if (!reason) { alert('Please provide a reason.'); return; }
+            closeModal();
+            await updateStatus(applicationId, 'Rejected', reason);
+        }
+
+        // ==============================================
+        // ADMIN PANEL (unchanged from v0.5)
+        // ==============================================
+        function switchAdminTab(tab) {
+            ['users','roles','groups','external','lookups','settings'].forEach(t => {
+                const tabEl = document.getElementById('atab-' + t);
+                const paneEl = document.getElementById('apane-' + t);
+                if (tabEl) tabEl.classList.toggle('active', t === tab);
+                if (paneEl) paneEl.classList.toggle('hidden', t !== tab);
+            });
+            if (tab === 'lookups') loadLookupTablesList();
+        }
+
+        async function loadAdminAll() {
+            await loadAdminRoles(); await loadAdminUsers();
+            await loadAdminGroups(); await loadAdminExternal();
+            await loadAdminSettings();
+        }
+
+        function showAdminMsg(text, isError) {
+            const div = document.getElementById('adminStatusMessage');
+            div.innerText = text;
+            div.className = 'status-box ' + (isError ? 'error-msg' : 'success-msg');
+            div.classList.remove('hidden');
+            setTimeout(() => div.classList.add('hidden'), 4500);
+        }
+
+        async function loadAdminUsers() {
+            const tbody = document.getElementById('adminUsersTableBody');
+            try {
+                const r = await api('/api/v1/admin/users');
+                if (!r.ok) {
+                    const e = await r.json().catch(() => ({}));
+                    tbody.innerHTML = `<tr><td colspan="6" style="color:red;text-align:center;">Failed: ${escapeHtml(e.detail || r.statusText)}</td></tr>`;
+                    return;
+                }
+                const data = await r.json();
+                tbody.innerHTML = '';
+                (data.users || []).forEach(u => {
+                    const isCurrent = currentUser && u.user_id === currentUser.user_id;
+                    const tr = document.createElement('tr');
+                    if (!u.is_active) tr.classList.add('inactive-row');
+                    tr.innerHTML = `
+                        <td>#${u.user_id}</td>
+                        <td>${escapeHtml(u.full_name)}${isCurrent ? ' <span style="color:#00a651;font-size:11px;">(you)</span>' : ''}</td>
+                        <td>${escapeHtml(u.username)}</td>
+                        <td>${renderRoleSelect(u.user_id, u.role_id)}</td>
+                        <td>${u.is_active ? '<span class="badge badge-approved">Active</span>' : '<span class="badge badge-rejected">Inactive</span>'}</td>
+                        <td>
+                            <button class="btn-action btn-save" onclick="saveUserRole(${u.user_id})">Save</button>
+                            ${u.is_active ? `<button class="btn-action btn-edit" onclick="resetStaffPassword(${u.user_id}, '${escapeHtml(u.full_name).replace(/'/g, "\\'")}', '${escapeHtml(u.username).replace(/'/g, "\\'")}')">Reset password</button>` : ''}
+                            ${!isCurrent && u.is_active ? `<button class="btn-action btn-reject" onclick="deactivateUser(${u.user_id})">Deactivate</button>` : ''}
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+                const sel = document.getElementById('newUserRoleId');
+                sel.innerHTML = '';
+                allRolesCache.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.role_id; opt.textContent = r.role_name;
+                    sel.appendChild(opt);
+                });
+            } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:red;text-align:center;">${escapeHtml(e.message)}</td></tr>`; }
+        }
+
+        function renderRoleSelect(userId, currentRoleId) {
+            const opts = allRolesCache.map(r => `<option value="${r.role_id}" ${r.role_id === currentRoleId ? 'selected' : ''}>${escapeHtml(r.role_name)}</option>`).join('');
+            return `<select id="userRole_${userId}">${opts}</select>`;
+        }
+
+        async function saveUserRole(userId) {
+            const roleId = parseInt(document.getElementById(`userRole_${userId}`).value, 10);
+            try {
+                const r = await api(`/api/v1/admin/users/${userId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role_id: roleId })
+                });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`User #${userId} updated.`);
+                if (currentUser && userId === currentUser.user_id) {
+                    // Refresh own permissions
+                    const me = await loadCurrentUser();
+                    if (me) currentUser = me;
+                }
+                await loadUsers(); await loadAdminUsers();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function resetStaffPassword(userId, name, username) {
+            if (!confirm(`Generate a new temporary password for ${name}?\nTheir current sessions will be revoked.`)) return;
+            try {
+                const r = await api(`/api/v1/admin/users/${userId}/regenerate-password`, { method: 'PUT' });
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) { showAdminMsg(`Failed: ${data.detail || r.statusText}`, true); return; }
+                if (data.temporary_password) {
+                    showCredentialDialog(
+                        `Password reset for ${name}.`,
+                        username,
+                        data.temporary_password,
+                        'They must change it on next login. Their existing sessions have been revoked.',
+                    );
+                } else {
+                    showAdminMsg(`Password reset for ${name}.`);
+                }
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function deactivateUser(userId) {
+            if (!confirm(`Deactivate user #${userId}?`)) return;
+            try {
+                const r = await api(`/api/v1/admin/users/${userId}`, { method: 'DELETE' });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`User #${userId} deactivated.`);
+                await loadUsers(); await loadAdminUsers();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function createUser() {
+            const fullName = document.getElementById('newUserFullName').value.trim();
+            const username = document.getElementById('newUserUsername').value.trim();
+            const roleId   = parseInt(document.getElementById('newUserRoleId').value, 10);
+            if (!fullName || !username) { showAdminMsg('Full name and username required.', true); return; }
+            try {
+                const r = await api('/api/v1/admin/users', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name: fullName, username, role_id: roleId, is_active: true })
+                });
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) { showAdminMsg(`Failed: ${data.detail || r.statusText}`, true); return; }
+                if (data.temporary_password) {
+                    showCredentialDialog(
+                        `User '${fullName}' created successfully.`,
+                        username,
+                        data.temporary_password,
+                        'They must change this password on first login.',
+                    );
+                } else {
+                    showAdminMsg(`User '${fullName}' created.`);
+                }
+                document.getElementById('newUserFullName').value = '';
+                document.getElementById('newUserUsername').value = '';
+                await loadUsers(); await loadAdminUsers(); await loadAdminGroups();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        function showCredentialDialog(headline, identifier, tempPassword, footer) {
+            const host = document.getElementById('modalHost');
+            host.innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this)closeCredentialDialog()">
+                  <div class="modal-content" style="max-width:480px;">
+                    <div class="modal-header">
+                      <h2 style="color:#00a651;">✓ ${escapeHtml(headline)}</h2>
+                      <button class="modal-close" onclick="closeCredentialDialog()">×</button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="auth-info" style="margin-bottom:16px;">
+                        <strong>This password will not be shown again.</strong> Please copy it and share it with the user via WhatsApp or in person.
+                      </div>
+                      <div style="margin-bottom:14px;">
+                        <label style="display:block;font-size:11px;color:#555;font-weight:600;margin-bottom:4px;text-transform:uppercase;">Login</label>
+                        <code style="display:block;padding:10px 12px;background:#f4f4f4;border-radius:4px;font-size:14px;">${escapeHtml(identifier)}</code>
+                      </div>
+                      <div style="margin-bottom:14px;">
+                        <label style="display:block;font-size:11px;color:#555;font-weight:600;margin-bottom:4px;text-transform:uppercase;">Temporary password</label>
+                        <code id="credDialogPassword" style="display:block;padding:10px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;font-size:14px;font-weight:bold;">${escapeHtml(tempPassword)}</code>
+                      </div>
+                      <button class="btn-submit" style="margin-top:0;width:auto;" onclick="copyCredPassword()">Copy password</button>
+                      ${footer ? `<p style="margin-top:14px;color:#666;font-size:12px;">${escapeHtml(footer)}</p>` : ''}
+                    </div>
+                    <div class="modal-footer">
+                      <button class="btn-action btn-edit" onclick="closeCredentialDialog()">I have copied it</button>
+                    </div>
+                  </div>
+                </div>`;
+        }
+        function closeCredentialDialog() { document.getElementById('modalHost').innerHTML = ''; }
+        function copyCredPassword() {
+            const code = document.getElementById('credDialogPassword');
+            if (!code) return;
+            navigator.clipboard.writeText(code.textContent).then(() => {
+                code.style.background = '#c8e6c9';
+                setTimeout(() => { code.style.background = '#fff8e1'; }, 1500);
+            });
+        }
+
+        async function loadAdminRoles() {
+            const container = document.getElementById('adminRolesContainer');
+            try {
+                const r = await api('/api/v1/admin/roles');
+                if (!r.ok) { const e = await r.json().catch(() => ({})); container.innerHTML = `<p style="color:red;">${escapeHtml(e.detail || r.statusText)}</p>`; return; }
+                allRolesCache = (await r.json()).roles || [];
+                container.innerHTML = '';
+                allRolesCache.forEach(role => {
+                    const card = document.createElement('div');
+                    card.className = 'role-card';
+                    const permChecks = permissionCatalog.map(p => `
+                        <label>
+                            <input type="checkbox" id="rolePerm_${role.role_id}_${p.key}" ${role.permissions.includes(p.key) ? 'checked' : ''}>
+                            <span><strong>${escapeHtml(p.key)}</strong> - ${escapeHtml(p.description)}</span>
+                        </label>`).join('');
+                    card.innerHTML = `
+                        <div class="role-card-header">
+                            <strong>${escapeHtml(role.role_name)}</strong>
+                            <span class="role-id">role_id #${role.role_id}</span>
+                        </div>
+                        ${role.description ? `<div style="color:#666;font-size:12px;margin-bottom:8px;">${escapeHtml(role.description)}</div>` : ''}
+                        <div class="perm-grid">${permChecks}</div>
+                        <div style="margin-top:10px;"><button class="btn-action btn-save" onclick="saveRolePermissions(${role.role_id})">Save permissions</button></div>`;
+                    container.appendChild(card);
+                });
+            } catch (e) { container.innerHTML = `<p style="color:red;">${escapeHtml(e.message)}</p>`; }
+        }
+
+        async function saveRolePermissions(roleId) {
+            const perms = permissionCatalog.filter(p => document.getElementById(`rolePerm_${roleId}_${p.key}`).checked).map(p => p.key);
+            try {
+                const r = await api(`/api/v1/admin/roles/${roleId}/permissions`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ permissions: perms })
+                });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`Permissions saved for role #${roleId}.`);
+                const me = await loadCurrentUser();
+                if (me) currentUser = me;
+                await loadAdminRoles();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function createRole() {
+            const name = document.getElementById('newRoleName').value.trim();
+            const desc = document.getElementById('newRoleDescription').value.trim();
+            if (!name) { showAdminMsg('Role name required.', true); return; }
+            try {
+                const r = await api('/api/v1/admin/roles', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role_name: name, description: desc || null, permissions: [] })
+                });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`Role '${name}' created.`);
+                document.getElementById('newRoleName').value = '';
+                document.getElementById('newRoleDescription').value = '';
+                await loadAdminRoles(); await loadAdminUsers();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function loadAdminGroups() {
+            const container = document.getElementById('adminGroupsContainer');
+            try {
+                const r = await api('/api/v1/admin/groups');
+                if (!r.ok) { const e = await r.json().catch(() => ({})); container.innerHTML = `<p style="color:red;">${escapeHtml(e.detail || r.statusText)}</p>`; return; }
+                const data = await r.json();
+                container.innerHTML = '';
+                if (!(data.groups || []).length) { container.innerHTML = `<p style="color:#888;">No groups defined yet.</p>`; return; }
+                data.groups.forEach(g => {
+                    const memberIds = g.members.map(m => m.user_id);
+                    const membersChecks = allUsers.map(u => `
+                        <label>
+                            <input type="checkbox" id="groupMember_${g.group_id}_${u.user_id}" ${memberIds.includes(u.user_id) ? 'checked' : ''}>
+                            <span>${escapeHtml(u.full_name)} <span style="color:#888;font-size:11px;">(${escapeHtml(u.username)})</span></span>
+                        </label>`).join('');
+                    const card = document.createElement('div');
+                    card.className = 'group-card';
+                    card.innerHTML = `
+                        <div class="group-card-header"><strong>${escapeHtml(g.group_name)}</strong><span class="group-id">group_id #${g.group_id}</span></div>
+                        ${g.description ? `<div style="color:#666;font-size:12px;margin-bottom:8px;">${escapeHtml(g.description)}</div>` : ''}
+                        <div class="member-list">Currently ${g.members.length} member${g.members.length === 1 ? '' : 's'}.</div>
+                        <div class="multi-checkbox-list" style="margin-top:8px;">${membersChecks}</div>
+                        <div style="margin-top:10px;">
+                            <button class="btn-action btn-save" onclick="saveGroupMembers(${g.group_id})">Save members</button>
+                            <button class="btn-action btn-reject" onclick="deleteGroup(${g.group_id}, '${escapeHtml(g.group_name)}')">Delete group</button>
+                        </div>`;
+                    container.appendChild(card);
+                });
+            } catch (e) { container.innerHTML = `<p style="color:red;">${escapeHtml(e.message)}</p>`; }
+        }
+
+        async function saveGroupMembers(groupId) {
+            const memberIds = allUsers.filter(u => { const cb = document.getElementById(`groupMember_${groupId}_${u.user_id}`); return cb && cb.checked; }).map(u => u.user_id);
+            try {
+                const r = await api(`/api/v1/admin/groups/${groupId}/members`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ member_user_ids: memberIds })
+                });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`Members saved for group #${groupId}.`);
+                await loadAdminGroups();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function createGroup() {
+            const name = document.getElementById('newGroupName').value.trim();
+            const desc = document.getElementById('newGroupDescription').value.trim();
+            if (!name) { showAdminMsg('Group name required.', true); return; }
+            try {
+                const r = await api('/api/v1/admin/groups', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ group_name: name, description: desc || null, member_user_ids: [] })
+                });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`Group '${name}' created.`);
+                document.getElementById('newGroupName').value = '';
+                document.getElementById('newGroupDescription').value = '';
+                await loadAdminGroups();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function deleteGroup(groupId, groupName) {
+            if (!confirm(`Delete group "${groupName}"?`)) return;
+            try {
+                const r = await api(`/api/v1/admin/groups/${groupId}`, { method: 'DELETE' });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`Group "${groupName}" deleted.`);
+                await loadAdminGroups();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function loadAdminExternal() {
+            const container = document.getElementById('adminExternalContainer');
+            try {
+                const r = await api('/api/v1/admin/external-submitters');
+                if (!r.ok) { const e = await r.json().catch(() => ({})); container.innerHTML = `<p style="color:red;">${escapeHtml(e.detail || r.statusText)}</p>`; return; }
+                const data = await r.json();
+                container.innerHTML = '';
+                if (!(data.external_submitters || []).length) {
+                    container.innerHTML = `<p style="color:#888;">No external submitter accounts created yet.</p>`;
+                } else {
+                    data.external_submitters.forEach(s => {
+                        const card = document.createElement('div');
+                        card.className = 'submitter-card';
+                        if (!s.is_active) card.style.opacity = '0.55';
+                        const groupTagClass = s.submitter_group === 'group_1' ? 'group-tag-1' : 'group-tag-2';
+                        const groupLabel = s.submitter_group === 'group_1' ? 'Group 1: Client/PMC/Main/LDC' : 'Group 2: Subcontractor';
+                        const last = s.last_login_at ? new Date(s.last_login_at).toLocaleString() : 'Never logged in';
+                        card.innerHTML = `
+                            <div>
+                                <strong>${escapeHtml(s.full_name)}</strong>
+                                <span class="group-tag ${groupTagClass}">${escapeHtml(groupLabel)}</span>
+                                ${!s.is_active ? '<span class="badge badge-rejected" style="margin-left:6px;">Inactive</span>' : ''}
+                                <div class="meta">
+                                    ${escapeHtml(s.email)}<br>
+                                    ${escapeHtml(s.organization_name || '-')} &middot; Created ${new Date(s.created_at).toLocaleDateString()}<br>
+                                    Last login: ${last} ${s.must_change_password ? '&middot; <em>must change password</em>' : ''}
+                                </div>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                ${s.is_active ? `
+                                    <button class="btn-action btn-edit" onclick="regeneratePassword(${s.submitter_id}, '${escapeHtml(s.full_name)}')">Regenerate password</button>
+                                    <button class="btn-action btn-reject" onclick="deactivateExternal(${s.submitter_id}, '${escapeHtml(s.full_name)}')">Deactivate</button>
+                                ` : ''}
+                            </div>`;
+                        container.appendChild(card);
+                    });
+                }
+                const sel = document.getElementById('newExtOrgId');
+                sel.innerHTML = '<option value="" disabled selected>Select organization</option>';
+                allOrganizations.forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.organization_id;
+                    const groupLabel = o.submitter_group === 'group_1' ? 'G1' : 'G2';
+                    opt.textContent = `${o.organization_name} (${groupLabel})`;
+                    sel.appendChild(opt);
+                });
+            } catch (e) { container.innerHTML = `<p style="color:red;">${escapeHtml(e.message)}</p>`; }
+        }
+
+        async function createExternalSubmitter() {
+            const fullName = document.getElementById('newExtFullName').value.trim();
+            const email    = document.getElementById('newExtEmail').value.trim();
+            const orgIdStr = document.getElementById('newExtOrgId').value;
+            if (!fullName || !email || !orgIdStr) { showAdminMsg('All fields required.', true); return; }
+            try {
+                const r = await api('/api/v1/admin/external-submitters', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name: fullName, email, organization_id: parseInt(orgIdStr, 10) })
+                });
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) { showAdminMsg(`Failed: ${data.detail || r.statusText}`, true); return; }
+                if (data.temporary_password) {
+                    showCredentialDialog(
+                        `External submitter '${fullName}' created.`,
+                        email,
+                        data.temporary_password,
+                        'Share this with them via WhatsApp or another secure channel. They will be required to change it on first login.',
+                    );
+                } else {
+                    showAdminMsg(`Account created for ${fullName}.`);
+                }
+                document.getElementById('newExtFullName').value = '';
+                document.getElementById('newExtEmail').value = '';
+                document.getElementById('newExtOrgId').value = '';
+                await loadAdminExternal();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function regeneratePassword(submitterId, name) {
+            if (!confirm(`Generate a new password for ${name}?`)) return;
+            try {
+                const r = await api(`/api/v1/admin/external-submitters/${submitterId}/regenerate-password`, { method: 'PUT' });
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) { showAdminMsg(`Failed: ${data.detail || r.statusText}`, true); return; }
+                if (data.temporary_password) {
+                    showCredentialDialog(
+                        `Password regenerated for ${name}.`,
+                        (data.submitter && data.submitter.email) || name,
+                        data.temporary_password,
+                        'They must change it on next login. Their existing session has been revoked.',
+                    );
+                } else {
+                    showAdminMsg(`Password regenerated for ${name}.`);
+                }
+                await loadAdminExternal();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function deactivateExternal(submitterId, name) {
+            if (!confirm(`Deactivate ${name}?`)) return;
+            try {
+                const r = await api(`/api/v1/admin/external-submitters/${submitterId}`, { method: 'DELETE' });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`${name} deactivated.`);
+                await loadAdminExternal();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function loadAdminSettings() {
+            const container = document.getElementById('adminSettingsContainer');
+            try {
+                const r = await api('/api/v1/admin/settings');
+                if (!r.ok) { const e = await r.json().catch(() => ({})); container.innerHTML = `<p style="color:red;">${escapeHtml(e.detail || r.statusText)}</p>`; return; }
+                const data = await r.json();
+                container.innerHTML = '';
+                (data.settings || []).forEach(s => {
+                    const row = document.createElement('div');
+                    row.className = 'setting-row';
+                    let inputHtml;
+                    if (s.setting_key === 'workflow_mode') {
+                        inputHtml = `
+                            <select id="set_${s.setting_key}">
+                                <option value="security_only" ${s.setting_value === 'security_only' ? 'selected' : ''}>Security only (single approval)</option>
+                                <option value="standard"      ${s.setting_value === 'standard'      ? 'selected' : ''}>Standard (HR ➔ Security)</option>
+                            </select>`;
+                    } else {
+                        inputHtml = `<input type="text" id="set_${s.setting_key}" value="${escapeHtml(s.setting_value)}">`;
+                    }
+                    row.innerHTML = `
+                        <div><div class="setting-key">${escapeHtml(s.setting_key)}</div><div class="setting-desc">${escapeHtml(s.description || '')}</div></div>
+                        <div>${inputHtml}</div>
+                        <div><button class="btn-action btn-save" onclick="saveSetting('${escapeHtml(s.setting_key)}')">Save</button></div>`;
+                    container.appendChild(row);
+                });
+            } catch (e) { container.innerHTML = `<p style="color:red;">${escapeHtml(e.message)}</p>`; }
+        }
+
+        async function saveSetting(key) {
+            const v = document.getElementById('set_' + key).value;
+            try {
+                const r = await api(`/api/v1/admin/settings/${key}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ setting_value: v })
+                });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showAdminMsg(`Setting '${key}' updated to '${v}'.`);
+                await loadWorkflowMode();
+            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
+        }
+
+        // ==============================================
+        // LOOKUP TABLES ADMIN (v0.9)
+        // ==============================================
+        let cachedLookups = [];
+
+        async function loadLookupTablesList() {
+            const sel = document.getElementById('lookupTableSelect');
+            if (!sel) return;
+            try {
+                const r = await api('/api/v1/lookups');
+                if (!r.ok) return;
+                const data = await r.json();
+                cachedLookups = data.lookups || [];
+                sel.innerHTML = '<option value="">— Select a table —</option>';
+                cachedLookups.forEach(lt => {
+                    sel.innerHTML += `<option value="${escapeHtml(lt.name)}">${escapeHtml(lt.name)} — ${escapeHtml(lt.description || '')}</option>`;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadLookupTable(tableName) {
+            const tbody = document.getElementById('lookupValuesTableBody');
+            if (!tableName) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">Select a table to view</td></tr>'; return; }
+            try {
+                const r = await api(`/api/v1/lookups/${encodeURIComponent(tableName)}`);
+                if (!r.ok) { const e = await r.json().catch(() => ({})); tbody.innerHTML = `<tr><td colspan="5" style="color:red;text-align:center;">${escapeHtml(e.detail || r.statusText)}</td></tr>`; return; }
+                const data = await r.json();
+                tbody.innerHTML = '';
+                if (!data.values || data.values.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">No entries yet. Click "+ Add Entry" to add one, or upload an Excel file.</td></tr>';
+                    return;
+                }
+                data.values.forEach(v => {
+                    const tr = document.createElement('tr');
+                    if (!v.is_active) tr.classList.add('inactive-row');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(v.value)}</td>
+                        <td>${escapeHtml(v.label || v.value)}</td>
+                        <td style="text-align:center;">${v.display_order}</td>
+                        <td>${v.is_active ? '<span class="badge badge-approved">Active</span>' : '<span class="badge badge-rejected">Inactive</span>'}</td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick="openEditLookupValue(${v.value_id})">Edit</button>
+                            <button class="btn-action btn-reject" onclick="deleteLookupValue(${v.value_id})">Delete</button>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) { tbody.innerHTML = `<tr><td colspan="5" style="color:red;text-align:center;">${escapeHtml(e.message)}</td></tr>`; }
+        }
+
+        function showLookupMsg(text, isError) {
+            const div = document.getElementById('lookupTableStatus');
+            div.innerText = text;
+            div.className = 'status-box ' + (isError ? 'error-msg' : 'success-msg');
+            div.classList.remove('hidden');
+            setTimeout(() => div.classList.add('hidden'), 4500);
+        }
+
+        async function openAddLookupValue() {
+            const tableName = document.getElementById('lookupTableSelect').value;
+            if (!tableName) { showLookupMsg('Select a lookup table first.', true); return; }
+            const html = `
+                <div class="modal-backdrop" onclick="if(event.target===this)this.remove()">
+                    <div class="modal" style="max-width:480px;">
+                        <div class="modal-header"><h2>Add Entry — ${escapeHtml(tableName)}</h2><button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">&times;</button></div>
+                        <div class="modal-body">
+                            <div class="form-group"><label>Value *</label><input type="text" id="lvValue" required></div>
+                            <div class="form-group" style="margin-top:12px;"><label>Label (optional, defaults to value)</label><input type="text" id="lvLabel"></div>
+                            <div class="form-group" style="margin-top:12px;"><label>Display Order</label><input type="number" id="lvOrder" value="0"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-cancel" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+                            <button class="btn-save" onclick="addLookupValue('${escapeHtml(tableName)}')">Add</button>
+                        </div>
+                    </div>
+                </div>`;
+            document.getElementById('modalHost').insertAdjacentHTML('beforeend', html);
+            setTimeout(() => document.getElementById('lvValue').focus(), 100);
+        }
+
+        async function addLookupValue(tableName) {
+            const value = document.getElementById('lvValue').value.trim();
+            if (!value) return;
+            const label = document.getElementById('lvLabel').value.trim() || value;
+            const order = parseInt(document.getElementById('lvOrder').value) || 0;
+            try {
+                const r = await api(`/api/v1/admin/lookups/${encodeURIComponent(tableName)}/values`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value, label, display_order: order })
+                });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showLookupMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showLookupMsg(`Entry "${value}" added.`);
+                document.querySelector('#modalHost .modal-backdrop')?.remove();
+                loadLookupTable(tableName);
+            } catch (e) { showLookupMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function openEditLookupValue(valueId) {
+            const tableName = document.getElementById('lookupTableSelect').value;
+            // Find the current value from the cached data
+            const r = await api(`/api/v1/lookups/${encodeURIComponent(tableName)}`);
+            if (!r.ok) return;
+            const data = await r.json();
+            const v = (data.values || []).find(x => x.value_id === valueId);
+            if (!v) return;
+            const html = `
+                <div class="modal-backdrop" onclick="if(event.target===this)this.remove()">
+                    <div class="modal" style="max-width:480px;">
+                        <div class="modal-header"><h2>Edit Entry — ${escapeHtml(tableName)}</h2><button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">&times;</button></div>
+                        <div class="modal-body">
+                            <div class="form-group"><label>Value *</label><input type="text" id="lvValue" value="${escapeHtml(v.value)}" required></div>
+                            <div class="form-group" style="margin-top:12px;"><label>Label</label><input type="text" id="lvLabel" value="${escapeHtml(v.label || '')}"></div>
+                            <div class="form-group" style="margin-top:12px;"><label>Display Order</label><input type="number" id="lvOrder" value="${v.display_order}"></div>
+                            <div class="form-group" style="margin-top:12px;">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="lvActive" ${v.is_active ? 'checked' : ''}>
+                                    <label for="lvActive">Active</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-cancel" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+                            <button class="btn-save" onclick="updateLookupValue('${escapeHtml(tableName)}', ${valueId})">Save</button>
+                        </div>
+                    </div>
+                </div>`;
+            document.getElementById('modalHost').insertAdjacentHTML('beforeend', html);
+        }
+
+        async function updateLookupValue(tableName, valueId) {
+            const body = {
+                value: document.getElementById('lvValue').value.trim(),
+                label: document.getElementById('lvLabel').value.trim() || null,
+                display_order: parseInt(document.getElementById('lvOrder').value) || 0,
+                is_active: document.getElementById('lvActive').checked,
+            };
+            try {
+                const r = await api(`/api/v1/admin/lookups/${encodeURIComponent(tableName)}/values/${valueId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showLookupMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showLookupMsg(`Entry updated.`);
+                document.querySelector('#modalHost .modal-backdrop')?.remove();
+                loadLookupTable(tableName);
+            } catch (e) { showLookupMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function deleteLookupValue(valueId) {
+            if (!confirm('Delete this entry?')) return;
+            const tableName = document.getElementById('lookupTableSelect').value;
+            try {
+                const r = await api(`/api/v1/admin/lookups/${encodeURIComponent(tableName)}/values/${valueId}`, { method: 'DELETE' });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); showLookupMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
+                showLookupMsg('Entry deleted.');
+                loadLookupTable(tableName);
+            } catch (e) { showLookupMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function openImportLookup() {
+            const tableName = document.getElementById('lookupTableSelect').value;
+            if (!tableName) { showLookupMsg('Select a lookup table first.', true); return; }
+            const html = `
+                <div class="modal-backdrop" onclick="if(event.target===this)this.remove()">
+                    <div class="modal" style="max-width:480px;">
+                        <div class="modal-header"><h2>Import Excel — ${escapeHtml(tableName)}</h2><button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">&times;</button></div>
+                        <div class="modal-body">
+                            <p class="card-subtitle" style="margin-top:0;">Upload an Excel file (.xlsx) with columns: <strong>value</strong>, <strong>label</strong> (optional), <strong>display_order</strong> (optional). Existing values are preserved; new rows are added.</p>
+                            <div class="form-group"><label>Excel file</label><input type="file" id="importFile" accept=".xlsx" required></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-cancel" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+                            <button class="btn-save" onclick="doImportLookup('${escapeHtml(tableName)}')">Upload</button>
+                        </div>
+                    </div>
+                </div>`;
+            document.getElementById('modalHost').insertAdjacentHTML('beforeend', html);
+        }
+
+        async function doImportLookup(tableName) {
+            const fileInput = document.getElementById('importFile');
+            if (!fileInput.files.length) return;
+            const fd = new FormData();
+            fd.append('file', fileInput.files[0]);
+            try {
+                const r = await api(`/api/v1/admin/lookups/${encodeURIComponent(tableName)}/import`, { method: 'POST', body: fd });
+                const data = await r.json();
+                if (!r.ok) { showLookupMsg(`Failed: ${data.detail || r.statusText}`, true); return; }
+                showLookupMsg(`Import complete: ${data.added} added, ${data.skipped} skipped.`);
+                document.querySelector('#modalHost .modal-backdrop')?.remove();
+                loadLookupTable(tableName);
+            } catch (e) { showLookupMsg(`Error: ${e.message}`, true); }
+        }
+
+        async function exportLookupTable() {
+            const tableName = document.getElementById('lookupTableSelect').value;
+            if (!tableName) { showLookupMsg('Select a lookup table first.', true); return; }
+            window.open(`${API_BASE}/api/v1/admin/lookups/${encodeURIComponent(tableName)}/export`, '_blank');
+        }
+
+        // ==============================================
+        // ATTACHMENT PREVIEW (v0.9)
+        // ==============================================
+        async function previewAttachment(applicationId, attachmentId, filename, mimeType) {
+            const isImage = mimeType && mimeType.startsWith('image/');
+            const isPdf = mimeType && mimeType === 'application/pdf';
+            const previewUrl = `${API_BASE}/api/v1/applications/${applicationId}/attachment/${attachmentId}?preview=true`;
+            const downloadUrl = `${API_BASE}/api/v1/applications/${applicationId}/attachment/${attachmentId}`;
+
+            let bodyContent;
+            if (isImage) {
+                bodyContent = `<img src="${previewUrl}" alt="${escapeHtml(filename)}">`;
+            } else if (isPdf) {
+                bodyContent = `<iframe src="${previewUrl}"></iframe>`;
+            } else {
+                bodyContent = `
+                    <div class="download-fallback">
+                        <p>Preview not available for this file type.</p>
+                        <p style="font-size:13px;color:#888;">${escapeHtml(filename)}</p>
+                        <a href="${downloadUrl}" class="btn-submit" style="display:inline-block;width:auto;text-decoration:none;padding:12px 24px;">Download to Open</a>
+                    </div>`;
+            }
+
+            const html = `
+                <div class="attachment-preview-modal" onclick="if(event.target===this)this.remove()">
+                    <div class="attachment-preview-container">
+                        <div class="attachment-preview-header">
+                            <h3>${escapeHtml(filename)}</h3>
+                            <div style="display:flex;gap:8px;">
+                                ${!isImage && !isPdf ? '' : `<a href="${downloadUrl}" class="btn-action btn-view" style="text-decoration:none;">Download</a>`}
+                                <button class="modal-close" onclick="this.closest('.attachment-preview-modal').remove()">&times;</button>
+                            </div>
+                        </div>
+                        <div class="attachment-preview-body">${bodyContent}</div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+
+        function escapeHtml(s) {
+            if (s === null || s === undefined) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>
