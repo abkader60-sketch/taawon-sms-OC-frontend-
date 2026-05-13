@@ -1092,9 +1092,9 @@
         // ==============================================
         function onCompanyChange() {
             const company = document.getElementById('companyName').value;
-            // Look up in organizations to determine form variant
+            // Check both the organizations data AND the raw value as fallback
             const org = allOrganizations.find(o => o.organization_name === company);
-            const isSubcontractor = org && org.submitter_group === 'group_2';
+            const isSubcontractor = (org && org.submitter_group === 'group_2') || company === 'Subcontractor (other)';
             const variant = isSubcontractor ? 'full' : 'brief';
             applyFormVariant(variant);
             // Show/hide subcontractor dropdown
@@ -2402,37 +2402,61 @@
         async function previewAttachment(applicationId, attachmentId, filename, mimeType) {
             const isImage = mimeType && mimeType.startsWith('image/');
             const isPdf = mimeType && mimeType === 'application/pdf';
-            const previewUrl = `${API_BASE}/api/v1/applications/${applicationId}/attachment/${attachmentId}?preview=true`;
             const downloadUrl = `${API_BASE}/api/v1/applications/${applicationId}/attachment/${attachmentId}`;
 
-            let bodyContent;
-            if (isImage) {
-                bodyContent = `<img src="${previewUrl}" alt="${escapeHtml(filename)}">`;
-            } else if (isPdf) {
-                bodyContent = `<iframe src="${previewUrl}"></iframe>`;
-            } else {
-                bodyContent = `
-                    <div class="download-fallback">
-                        <p>Preview not available for this file type.</p>
-                        <p style="font-size:13px;color:#888;">${escapeHtml(filename)}</p>
-                        <a href="${downloadUrl}" class="btn-submit" style="display:inline-block;width:auto;text-decoration:none;padding:12px 24px;">Download to Open</a>
-                    </div>`;
-            }
-
-            const html = `
+            const modalHtml = `
                 <div class="attachment-preview-modal" onclick="if(event.target===this)this.remove()">
                     <div class="attachment-preview-container">
                         <div class="attachment-preview-header">
                             <h3>${escapeHtml(filename)}</h3>
                             <div style="display:flex;gap:8px;">
-                                ${!isImage && !isPdf ? '' : `<a href="${downloadUrl}" class="btn-action btn-view" style="text-decoration:none;">Download</a>`}
+                                <a href="${downloadUrl}" class="btn-action btn-view" style="text-decoration:none;">Download</a>
                                 <button class="modal-close" onclick="this.closest('.attachment-preview-modal').remove()">&times;</button>
                             </div>
                         </div>
-                        <div class="attachment-preview-body">${bodyContent}</div>
+                        <div class="attachment-preview-body" id="previewBody">
+                            <div class="download-fallback"><p>Loading preview...</p></div>
+                        </div>
                     </div>
                 </div>`;
-            document.body.insertAdjacentHTML('beforeend', html);
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const bodyEl = document.getElementById('previewBody');
+
+            try {
+                const r = await api(`/api/v1/applications/${applicationId}/attachment/${attachmentId}?preview=true`);
+                if (!r.ok) {
+                    const errData = await r.json().catch(() => ({ detail: r.statusText }));
+                    bodyEl.innerHTML = `
+                        <div class="download-fallback">
+                            <p style="color:#c62828;">Failed to load preview: ${escapeHtml(errData.detail || 'Unknown error')}</p>
+                            <p style="font-size:13px;color:#888;">${escapeHtml(filename)}</p>
+                            <a href="${downloadUrl}" class="btn-submit" style="display:inline-block;width:auto;text-decoration:none;padding:12px 24px;">Download instead</a>
+                        </div>`;
+                    return;
+                }
+                const blob = await r.blob();
+                const objectUrl = URL.createObjectURL(blob);
+
+                if (isImage) {
+                    bodyEl.innerHTML = `<img src="${objectUrl}" alt="${escapeHtml(filename)}" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:4px;">`;
+                } else if (isPdf) {
+                    bodyEl.innerHTML = `<iframe src="${objectUrl}" style="width:100%;height:70vh;border:none;border-radius:4px;"></iframe>`;
+                } else {
+                    bodyEl.innerHTML = `
+                        <div class="download-fallback">
+                            <p>Preview not available for this file type.</p>
+                            <p style="font-size:13px;color:#888;">${escapeHtml(filename)}</p>
+                            <a href="${downloadUrl}" class="btn-submit" style="display:inline-block;width:auto;text-decoration:none;padding:12px 24px;">Download to Open</a>
+                        </div>`;
+                }
+            } catch (e) {
+                bodyEl.innerHTML = `
+                    <div class="download-fallback">
+                        <p style="color:#c62828;">Failed to load preview: ${escapeHtml(e.message)}</p>
+                        <p style="font-size:13px;color:#888;">${escapeHtml(filename)}</p>
+                        <a href="${downloadUrl}" class="btn-submit" style="display:inline-block;width:auto;text-decoration:none;padding:12px 24px;">Download instead</a>
+                    </div>`;
+            }
         }
 
 
