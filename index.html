@@ -1089,7 +1089,7 @@
             });
             // Also add any group_2 orgs from allOrganizations not already listed
             (allOrganizations || []).forEach(o => {
-                if (o.submitter_group === 'group_2' && o.organization_name !== 'Subcontractor (other)' && !seen.has(o.organization_name)) {
+                if (o.submitter_group === 'group_2' && !o.organization_name.toLowerCase().includes('subcontractor') && !seen.has(o.organization_name)) {
                     seen.add(o.organization_name);
                     html += `<option value="${escapeHtml(o.organization_name)}">${escapeHtml(o.organization_name)}</option>`;
                 }
@@ -1124,8 +1124,8 @@
             const company = document.getElementById('companyName').value;
             // Check both the organizations data AND the raw value as fallback
             const org = allOrganizations.find(o => o.organization_name === company);
-            const isSubcontractor = (org && org.submitter_group === 'group_2') || company === 'Subcontractor (other)';
-            const wantsSubcontractorOther = company === 'Subcontractor (other)';
+            const isSubcontractor = (org && org.submitter_group === 'group_2') || company.toLowerCase().includes('subcontractor');
+            const wantsSubcontractorOther = company.toLowerCase().includes('subcontractor');
             const variant = isSubcontractor ? 'full' : 'brief';
             applyFormVariant(variant);
             // Show/hide subcontractor dropdown
