@@ -387,6 +387,12 @@
                                 <label>Company Name / Employer *</label>
                                 <select id="companyName" required onchange="onCompanyChange()">
                                     <option value="" disabled selected>Select company</option>
+                                    <option value="SEVEN">SEVEN (Client)</option>
+                                    <option value="ELLISDON">ELLISDON (PMC)</option>
+                                    <option value="SBG">SBG (Main Contractor)</option>
+                                    <option value="ATKINS">ATKINS (LDC)</option>
+                                    <option value="AECOM">AECOM (LDC)</option>
+                                    <option value="Subcontractor (other)">Subcontractor</option>
                                 </select>
                                 <span class="field-hint">Determines which fields appear below.</span>
                             </div>
@@ -394,6 +400,14 @@
                                 <label>Subcontractor Name *</label>
                                 <select id="subcontractorName">
                                     <option value="" disabled selected>Select subcontractor</option>
+                                    <option value="NAFFCO">NAFFCO</option>
+                                    <option value="AL HAMRA">AL HAMRA</option>
+                                    <option value="NATIONAL GUARDS">NATIONAL GUARDS</option>
+                                    <option value="NORTH SHIFT SECURITY">NORTH SHIFT SECURITY</option>
+                                    <option value="AL AFAQ SECURITY">AL AFAQ SECURITY</option>
+                                    <option value="CLASSIC SECURITY">CLASSIC SECURITY</option>
+                                    <option value="MODERN SECURITY">MODERN SECURITY</option>
+                                    <option value="AL SAQR SECURITY">AL SAQR SECURITY</option>
                                 </select>
                                 <span class="field-hint">Choose the specific subcontractor company from the list.</span>
                             </div>
@@ -1033,13 +1047,15 @@
                 const r = await api('/api/v1/organizations');
                 if (!r.ok) return;
                 allOrganizations = (await r.json()).organizations || [];
+                // Refresh subcontractor dropdown now that we have group_2 orgs
+                populateSubcontractorDropdown();
             } catch (e) { console.error(e); }
         }
 
         let lookupCompanies = [];
         let lookupSubcontractors = [];
 
-        async function loadFormLookups() {
+         async function loadFormLookups() {
             try {
                 const r = await api('/api/v1/lookups');
                 if (!r.ok) return;
@@ -1056,15 +1072,29 @@
                         companySel.innerHTML += `<option value="${escapeHtml(c.value)}">${escapeHtml(c.label || c.value)}</option>`;
                     });
                 }
-                // Populate subcontractor dropdown from lookup
-                const subconSel = document.getElementById('subcontractorName');
-                if (subconSel) {
-                    subconSel.innerHTML = '<option value="" disabled selected>Select subcontractor</option>';
-                    lookupSubcontractors.forEach(s => {
-                        subconSel.innerHTML += `<option value="${escapeHtml(s.value)}">${escapeHtml(s.label || s.value)}</option>`;
-                    });
-                }
+                // Populate subcontractor dropdown: merge lookup table data + group_2 orgs from allOrganizations
+                populateSubcontractorDropdown();
             } catch (e) { console.error(e); }
+        }
+
+        function populateSubcontractorDropdown() {
+            const subconSel = document.getElementById('subcontractorName');
+            if (!subconSel) return;
+            // Collect unique entries: lookup table values first
+            const seen = new Set();
+            let html = '<option value="" disabled selected>Select subcontractor</option>';
+            (lookupSubcontractors || []).forEach(s => {
+                const v = s.value;
+                if (!seen.has(v)) { seen.add(v); html += `<option value="${escapeHtml(v)}">${escapeHtml(s.label || v)}</option>`; }
+            });
+            // Also add any group_2 orgs from allOrganizations not already listed
+            (allOrganizations || []).forEach(o => {
+                if (o.submitter_group === 'group_2' && o.organization_name !== 'Subcontractor (other)' && !seen.has(o.organization_name)) {
+                    seen.add(o.organization_name);
+                    html += `<option value="${escapeHtml(o.organization_name)}">${escapeHtml(o.organization_name)}</option>`;
+                }
+            });
+            subconSel.innerHTML = html;
         }
 
         async function loadWorkflowMode() {
@@ -1095,13 +1125,14 @@
             // Check both the organizations data AND the raw value as fallback
             const org = allOrganizations.find(o => o.organization_name === company);
             const isSubcontractor = (org && org.submitter_group === 'group_2') || company === 'Subcontractor (other)';
+            const wantsSubcontractorOther = company === 'Subcontractor (other)';
             const variant = isSubcontractor ? 'full' : 'brief';
             applyFormVariant(variant);
             // Show/hide subcontractor dropdown
             const subconWrapper = document.querySelector('.subcontractor-only');
             const subconSelect = document.getElementById('subcontractorName');
             if (subconWrapper) {
-                if (isSubcontractor) {
+                if (wantsSubcontractorOther) {
                     subconWrapper.classList.remove('hidden');
                     subconSelect.required = true;
                 } else {
@@ -2426,9 +2457,11 @@
                 const r = await api(`/api/v1/applications/${applicationId}/attachment/${attachmentId}?preview=true`);
                 if (!r.ok) {
                     const errData = await r.json().catch(() => ({ detail: r.statusText }));
+                    const isMissing = r.status === 410;
                     bodyEl.innerHTML = `
                         <div class="download-fallback">
                             <p style="color:#c62828;">Failed to load preview: ${escapeHtml(errData.detail || 'Unknown error')}</p>
+                            ${isMissing ? '<p style="font-size:13px;color:#888;">Uploaded files are stored temporarily on the server. They may have been deleted during a server deployment. Please re-upload the file if needed.</p>' : ''}
                             <p style="font-size:13px;color:#888;">${escapeHtml(filename)}</p>
                             <a href="${downloadUrl}" class="btn-submit" style="display:inline-block;width:auto;text-decoration:none;padding:12px 24px;">Download instead</a>
                         </div>`;
