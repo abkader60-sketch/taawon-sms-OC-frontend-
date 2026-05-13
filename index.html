@@ -9,7 +9,7 @@
         - Production: set content to the absolute URL of your API
           (e.g., content="https://taawon-sms-api.up.railway.app").
     -->
-    <meta name="sms-api-base" content="https://securitysms-production.up.railway.app">
+    <meta name="sms-api-base" content="">
     <title>Ta'awon P3 SMS</title>
     <style>
         body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; height: 100vh; overflow: hidden; }
@@ -387,14 +387,15 @@
                                 <label>Company Name / Employer *</label>
                                 <select id="companyName" required onchange="onCompanyChange()">
                                     <option value="" disabled selected>Select company</option>
-                                    <option value="SEVEN">SEVEN (Client)</option>
-                                    <option value="ELLISDON">ELLISDON (PMC)</option>
-                                    <option value="SBG">SBG (Main Contractor)</option>
-                                    <option value="ATKINS">ATKINS (LDC)</option>
-                                    <option value="AECOM">AECOM (LDC)</option>
-                                    <option value="Subcontractor (other)">Subcontractor</option>
                                 </select>
                                 <span class="field-hint">Determines which fields appear below.</span>
+                            </div>
+                            <div class="form-group subcontractor-only hidden">
+                                <label>Subcontractor Name *</label>
+                                <select id="subcontractorName">
+                                    <option value="" disabled selected>Select subcontractor</option>
+                                </select>
+                                <span class="field-hint">Choose the specific subcontractor company from the list.</span>
                             </div>
 
                             <div class="form-group">
@@ -493,13 +494,6 @@
                                 <span class="field-hint">Optional. Editable by the reviewer.</span>
                             </div>
 
-                            <div class="form-group">
-                                <label>Subcontractor Name</label>
-                                <select id="subcontractorName">
-                                    <option value="" disabled selected>Select subcontractor</option>
-                                </select>
-                                <span class="field-hint">Required for subcontractor personnel. Select from the list.</span>
-                            </div>
                         </div>
                     </div>
 
@@ -776,6 +770,8 @@
                 document.getElementById('view-id-form').classList.remove('hidden');
                 document.getElementById('pageTitle').innerText = 'Application for Site Access ID';
                 document.getElementById('pageSubtitle').innerText = 'Choose your Company / Employer first - the form adapts to that selection.';
+                loadFormLookups();
+                loadOrganizations();
             } else if (viewName === 'admin') {
                 document.getElementById('nav-admin').classList.add('active');
                 document.getElementById('view-admin').classList.remove('hidden');
@@ -1096,9 +1092,24 @@
         // ==============================================
         function onCompanyChange() {
             const company = document.getElementById('companyName').value;
-            // Subcontractor (any) -> full form. Anything else -> brief form.
-            const variant = (company === 'Subcontractor (other)') ? 'full' : 'brief';
+            // Look up in organizations to determine form variant
+            const org = allOrganizations.find(o => o.organization_name === company);
+            const isSubcontractor = org && org.submitter_group === 'group_2';
+            const variant = isSubcontractor ? 'full' : 'brief';
             applyFormVariant(variant);
+            // Show/hide subcontractor dropdown
+            const subconWrapper = document.querySelector('.subcontractor-only');
+            const subconSelect = document.getElementById('subcontractorName');
+            if (subconWrapper) {
+                if (isSubcontractor) {
+                    subconWrapper.classList.remove('hidden');
+                    subconSelect.required = true;
+                } else {
+                    subconWrapper.classList.add('hidden');
+                    subconSelect.required = false;
+                    subconSelect.value = '';
+                }
+            }
         }
 
         function applyFormVariant(variant) {
@@ -1161,7 +1172,7 @@
 
         function clearHiddenFields() {
             // Clear values in any field that is currently hidden, so they don't sneak into submissions.
-            document.querySelectorAll('.brief-only.hidden input, .brief-only.hidden select, .full-only.hidden input, .full-only.hidden select').forEach(inp => {
+            document.querySelectorAll('.brief-only.hidden input, .brief-only.hidden select, .full-only.hidden input, .full-only.hidden select, .subcontractor-only.hidden input, .subcontractor-only.hidden select').forEach(inp => {
                 if (inp.type === 'checkbox') inp.checked = false;
                 else if (inp.type === 'file') inp.value = '';
                 else inp.value = '';
@@ -1585,6 +1596,12 @@
                     const d = value ? (typeof value === 'string' ? value.slice(0,10) : new Date(value).toISOString().slice(0,10)) : '';
                     return `<dt>${label}</dt><dd><input type="date" id="edit_${fieldName}" value="${escapeHtml(d)}"></dd>`;
                 }
+                if (opts.select && opts.choices) {
+                    const options = opts.choices.map(c =>
+                        `<option value="${escapeHtml(c.value)}" ${c.value === value ? 'selected' : ''}>${escapeHtml(c.label || c.value)}</option>`
+                    ).join('');
+                    return `<dt>${label}</dt><dd><select id="edit_${fieldName}"><option value="">-- None --</option>${options}</select></dd>`;
+                }
                 return `<dt>${label}</dt><dd><input type="text" id="edit_${fieldName}" value="${escapeHtml(value || '')}"></dd>`;
             }
             let display;
@@ -1646,7 +1663,7 @@
                     ${detailField('Job / Trade', 'job_title', a.job_title)}
                     ${detailField('Employee No.', 'employee_number', a.employee_number)}
                     ${detailField('Organization', 'organization', a.organization)}
-                    ${detailField('Subcontractor', 'subcontractor', a.subcontractor)}
+                    ${detailField('Subcontractor', 'subcontractor', a.subcontractor, { select: true, choices: lookupSubcontractors })}
                     ${detailField('Date Joined', 'date_joined', a.date_joined, { date: true })}
                     ${detailField('Reports To', 'reports_to', a.reports_to)}
                     ${detailField('Gov ID Type', 'gov_id_type', a.gov_id_type)}
