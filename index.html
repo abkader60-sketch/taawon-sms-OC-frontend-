@@ -422,6 +422,79 @@
                                     <option value="Replacement for a LOST ID">Replacement for a LOST ID</option>
                                 </select>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- ============== 2. APPLICANT DETAILS ============== -->
+                    <div class="card">
+                        <div class="card-title">2. Applicant Details</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Full Name (as per Iqama / Passport) *</label>
+                                <input type="text" id="fullName" required>
+                            </div>
+
+                            <div class="form-group full-only">
+                                <label>Gender *</label>
+                                <select id="gender">
+                                    <option value="" disabled selected>Select gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Nationality *</label>
+                                <select id="nationality" required>
+                                    <option value="" disabled selected>Select nationality</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Date of Birth *</label>
+                                <input type="date" id="dateOfBirth" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Iqama / Business Visa / National ID Number *</label>
+                                <input type="text" id="iqamaNumber" required inputmode="numeric" pattern="[0-9]+" title="Numbers only" placeholder="Numbers only">
+                                <span class="field-hint">Numbers only.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Iqama / National ID Expiry Date *</label>
+                                <input type="date" id="iqamaExpiry" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Passport Number</label>
+                                <input type="text" id="passportNo" pattern="[A-Za-z0-9]+" title="Letters and numbers only" placeholder="e.g. A1234567">
+                                <span class="field-hint">Optional. Alphanumeric.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Passport Expiry Date</label>
+                                <input type="date" id="passportExpiry">
+                                <span class="field-hint">Optional.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Blood Type *</label>
+                                <select id="bloodType" required>
+                                    <option value="" disabled selected>Select blood type</option>
+                                    <option value="O+">O+</option> <option value="O-">O-</option>
+                                    <option value="A+">A+</option> <option value="A-">A-</option>
+                                    <option value="B+">B+</option> <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option> <option value="AB-">AB-</option>
+                                    <option value="Unknown">Unknown</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Employee Number</label>
+                                <input type="text" id="employeeNo" placeholder="Optional">
+                                <span class="field-hint">Optional. Editable by the reviewer.</span>
+                            </div>
 
                             <div class="form-group">
                                 <label>Language *</label>
@@ -443,110 +516,35 @@
                                 <input type="date" id="safetyInductionDate" required>
                             </div>
 
-                            <!-- Brief-only -->
-                            <div class="form-group brief-only hidden">
+                            <div class="form-group">
                                 <label>Date Joined *</label>
-                                <input type="date" id="dateJoined">
+                                <input type="date" id="dateJoined" required>
                                 <span class="field-hint">Date this person joined the organization.</span>
                             </div>
-                            <div class="form-group brief-only hidden">
-                                <label>Reports To *</label>
+
+                            <div class="form-group">
+                                <label>Reports To</label>
                                 <input type="text" id="reportsTo" placeholder="e.g. Mohammed Al-Harbi (Site Manager)">
-                                <span class="field-hint">Direct supervisor's name and title.</span>
+                                <span class="field-hint">Optional. Direct supervisor's name and title.</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ============== 2. APPLICANT DETAILS ============== -->
+                    <!-- ============== 3. CONTACT INFORMATION ============== -->
                     <div class="card">
-                        <div class="card-title">2. Applicant Details</div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Full Name (as per Iqama / Passport) *</label>
-                                <input type="text" id="fullName" required>
-                            </div>
-
-                            <!-- Full-only: Gender -->
-                            <div class="form-group full-only">
-                                <label>Gender *</label>
-                                <select id="gender">
-                                    <option value="" disabled selected>Select gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Nationality *</label>
-                                <select id="nationality" required>
-                                    <option value="" disabled selected>Select nationality</option>
-                                    <!-- Filled by JS from COUNTRY_LIST -->
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Date of Birth *</label>
-                                <input type="date" id="dateOfBirth" required>
-                            </div>
-
-                            <!-- Both forms get Blood Type (kept on brief: safety relevant) -->
-                            <div class="form-group">
-                                <label>Blood Type *</label>
-                                <select id="bloodType" required>
-                                    <option value="" disabled selected>Select blood type</option>
-                                    <option value="O+">O+</option> <option value="O-">O-</option>
-                                    <option value="A+">A+</option> <option value="A-">A-</option>
-                                    <option value="B+">B+</option> <option value="B-">B-</option>
-                                    <option value="AB+">AB+</option> <option value="AB-">AB-</option>
-                                    <option value="Unknown">Unknown</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Employee Number</label>
-                                <input type="text" id="employeeNo" placeholder="Optional">
-                                <span class="field-hint">Optional. Editable by the reviewer.</span>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <!-- ============== 3. IDENTIFICATION ============== -->
-                    <div class="card">
-                        <div class="card-title">3. Identification</div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Iqama / Business Visa / National ID Number *</label>
-                                <input type="text" id="iqamaNumber" required inputmode="numeric" pattern="[0-9]+" title="Numbers only" placeholder="Numbers only">
-                                <span class="field-hint">Numbers only.</span>
-                            </div>
-
-                            <!-- Full-only: Passport -->
-                            <div class="form-group full-only">
-                                <label>Passport Number *</label>
-                                <input type="text" id="passportNo" pattern="[A-Za-z0-9]+" title="Letters and numbers only" placeholder="e.g. A1234567">
-                                <span class="field-hint">Alphanumeric.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ============== 4. CONTACT INFORMATION ============== -->
-                    <div class="card">
-                        <div class="card-title">4. Contact Information</div>
+                        <div class="card-title">3. Contact Information</div>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Mobile Number *</label>
                                 <input type="tel" id="mobileNo" required placeholder="+966 5X XXX XXXX">
 
-                                <!-- Full-only: WhatsApp toggle -->
-                                <div class="checkbox-group full-only">
+                                <div class="checkbox-group">
                                     <input type="checkbox" id="sameAsWhatsapp" checked onchange="handleWhatsAppChange()">
                                     <label for="sameAsWhatsapp">Use this number for WhatsApp</label>
                                 </div>
                             </div>
 
-                            <!-- Full-only: WhatsApp number, conditional -->
-                            <div class="form-group hidden full-only" id="whatsappWrapper">
+                            <div class="form-group hidden" id="whatsappWrapper">
                                 <label>WhatsApp Number *</label>
                                 <input type="tel" id="whatsappNo" placeholder="Enter WhatsApp number">
                             </div>
@@ -558,33 +556,28 @@
                         </div>
                     </div>
 
-                    <!-- ============== 5. EMPLOYMENT & PROFESSION (full-only) ============== -->
+                    <!-- ============== 4. EMPLOYMENT & PROFESSION (full-only) ============== -->
                     <div class="card full-only">
-                        <div class="card-title">5. Employment &amp; Profession</div>
+                        <div class="card-title">4. Employment &amp; Profession</div>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Trade / Profession (as in the Iqama) *</label>
                                 <input type="text" id="tradeIqama">
                             </div>
                             <div class="form-group">
+                                <div class="checkbox-group" style="margin-bottom:10px;">
+                                    <input type="checkbox" id="sameTradeAsIqama" onchange="copyTradeFromIqama()">
+                                    <label for="sameTradeAsIqama">Same as above</label>
+                                </div>
                                 <label>Trade / Profession (as in the Project) *</label>
                                 <input type="text" id="tradeProject">
-                            </div>
-                            <div class="form-group full-width">
-                                <div class="checkbox-group">
-                                    <input type="checkbox" id="sponsorIsThirdParty" onchange="handleSponsorChange()">
-                                    <label for="sponsorIsThirdParty">
-                                        The sponsor on the Iqama is <strong>not</strong> the supplier or subcontractor (a Legal Agreement attachment is required).
-                                        <br><span class="field-hint">The approver will verify this declaration.</span>
-                                    </label>
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ============== 6. ATTACHMENTS ============== -->
+                    <!-- ============== 5. ATTACHMENTS ============== -->
                     <div class="card">
-                        <div class="card-title">6. Attachments</div>
+                        <div class="card-title">5. Attachments</div>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>ID Copy *</label>
@@ -592,21 +585,38 @@
                                 <span class="field-hint">Required for all forms.</span>
                             </div>
 
-                            <!-- Full-only attachments -->
-                            <div class="form-group full-only">
-                                <label>Insurance Validity *</label>
-                                <input type="file" id="insuranceUpload" accept="image/*,.pdf">
-                                <span class="field-hint">Required.</span>
+                            <div class="form-group full-only full-width" style="padding:12px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:4px;">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="sponsorIsThirdParty" onchange="handleSponsorChange()">
+                                    <label for="sponsorIsThirdParty" style="color:#c62828;">
+                                        The sponsor on the Iqama is <strong>not</strong> the supplier or subcontractor (a Legal Agreement attachment is required).
+                                        <br><span class="field-hint" style="color:#e57373;">The approver will verify this declaration.</span>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="form-group full-only">
-                                <label>Personal Photo</label>
-                                <input type="file" id="photoUpload" accept="image/*">
-                                <span class="field-hint">Recommended.</span>
-                            </div>
-                            <div class="form-group hidden full-only" id="legalAgreementWrapper">
+
+                            <div class="form-group hidden" id="legalAgreementWrapper" style="margin-top:0;">
                                 <label>Legal Agreement *</label>
                                 <input type="file" id="legalAgreementUpload" accept=".pdf,image/*">
                                 <span class="field-hint">Required because the Iqama sponsor is a third party.</span>
+                            </div>
+
+                            <div class="form-group full-only">
+                                <label>Insurance Validity *</label>
+                                <input type="file" id="insuranceUpload" accept="image/*,.pdf">
+                                <span class="field-hint">Required for full form.</span>
+                            </div>
+
+                            <div class="form-group full-only">
+                                <label>Insurance Expiry Date *</label>
+                                <input type="date" id="insuranceExpiry">
+                                <span class="field-hint">Required for full form.</span>
+                            </div>
+
+                            <div class="form-group full-only">
+                                <label>Personal Photo</label>
+                                <input type="file" id="photoUpload" accept="image/*">
+                                <span class="field-hint">Recommended. Photo size: 4 x 6 cm with white background.</span>
                             </div>
                         </div>
                     </div>
@@ -1154,15 +1164,13 @@
                 fullEls.forEach(el => el.classList.add('hidden'));
                 banner.className = 'variant-banner brief';
                 banner.innerHTML = '<strong>Brief form</strong> &middot; This applies to Client / PMC / Main Contractor / LDC personnel. Fewer fields and fewer attachments are required.';
-                // Clear any data the user typed into now-hidden fields, so it doesn't get submitted by mistake
                 clearHiddenFields();
-                // Required attribute management - drop required from full-only fields
                 setRequiredAttribute('.full-only', false);
                 setRequiredAttribute('.brief-only', true);
-                // Brief form: ID Copy is the only required upload
                 document.getElementById('idCopyUpload').required = true;
                 document.getElementById('insuranceUpload').required = false;
                 document.getElementById('legalAgreementUpload').required = false;
+                handleWhatsAppChange();
             } else if (variant === 'full') {
                 fullEls.forEach(el => el.classList.remove('hidden'));
                 briefEls.forEach(el => el.classList.add('hidden'));
@@ -1171,13 +1179,11 @@
                 clearHiddenFields();
                 setRequiredAttribute('.full-only', true);
                 setRequiredAttribute('.brief-only', false);
-                // Full form: ID Copy + Insurance required; legal agreement only if 3rd-party sponsor
                 document.getElementById('idCopyUpload').required = true;
                 document.getElementById('insuranceUpload').required = true;
-                handleSponsorChange();   // re-evaluate legal-agreement requirement
-                handleWhatsAppChange();  // re-evaluate whatsapp number requirement
+                handleSponsorChange();
+                handleWhatsAppChange();
             } else {
-                // No company chosen yet: keep all variant-specific fields hidden, banner empty
                 briefEls.forEach(el => el.classList.add('hidden'));
                 fullEls.forEach(el => el.classList.add('hidden'));
                 banner.className = 'variant-banner empty';
@@ -1211,8 +1217,6 @@
         }
 
         function handleSponsorChange() {
-            // Only meaningful in full-form context
-            if (formVariant !== 'full') return;
             const isThirdParty = document.getElementById('sponsorIsThirdParty').checked;
             const wrapper = document.getElementById('legalAgreementWrapper');
             const upload  = document.getElementById('legalAgreementUpload');
@@ -1221,12 +1225,19 @@
         }
 
         function handleWhatsAppChange() {
-            if (formVariant !== 'full') return;
             const isSame = document.getElementById('sameAsWhatsapp').checked;
             const waWrapper = document.getElementById('whatsappWrapper');
             const waInput   = document.getElementById('whatsappNo');
             if (isSame) { waWrapper.classList.add('hidden'); waInput.required = false; waInput.value = ""; }
             else { waWrapper.classList.remove('hidden'); waInput.required = true; }
+        }
+
+        function copyTradeFromIqama() {
+            const checked = document.getElementById('sameTradeAsIqama').checked;
+            const source = document.getElementById('tradeIqama');
+            const target = document.getElementById('tradeProject');
+            if (checked) { target.value = source.value; target.readOnly = true; }
+            else { target.readOnly = false; }
         }
 
         document.getElementById('idApplicationForm').addEventListener('submit', async function(e) {
@@ -1253,22 +1264,23 @@
             fd.append('blood_type',             document.getElementById('bloodType').value);
             fd.append('employee_number',        document.getElementById('employeeNo').value.trim() || 'N/A');
             fd.append('subcontractor',          document.getElementById('subcontractorName').value || '');
-            // submitted_by_user_id is now derived from the session cookie on the server.
+            fd.append('date_joined',            document.getElementById('dateJoined').value || '');
+            fd.append('reports_to',             document.getElementById('reportsTo').value.trim() || '');
+            fd.append('iqama_expiry_date',      document.getElementById('iqamaExpiry').value || '');
+            fd.append('passport_expiry_date',   document.getElementById('passportExpiry').value || '');
+
+            const sameAsWa = document.getElementById('sameAsWhatsapp').checked;
+            const mobile = document.getElementById('mobileNo').value.trim();
+            const finalWhatsapp = sameAsWa ? mobile : document.getElementById('whatsappNo').value.trim();
+            fd.append('whatsapp_number',         finalWhatsapp);
 
             if (formVariant === 'full') {
-                const sameAsWa = document.getElementById('sameAsWhatsapp').checked;
-                const mobile = document.getElementById('mobileNo').value.trim();
-                const finalWhatsapp = sameAsWa ? mobile : document.getElementById('whatsappNo').value.trim();
-                fd.append('whatsapp_number',         finalWhatsapp);
                 fd.append('job_title',               document.getElementById('tradeProject').value.trim());
                 fd.append('is_third_party_sponsor',  document.getElementById('sponsorIsThirdParty').checked);
+                fd.append('insurance_expiry_date',   document.getElementById('insuranceExpiry').value || '');
             } else {
-                // brief
-                fd.append('whatsapp_number',         document.getElementById('mobileNo').value.trim());  // reuse mobile
-                fd.append('job_title',               document.getElementById('reportsTo').value.trim() || ''); // brief has no Trade; using reports_to also stored separately
+                fd.append('job_title',               '');
                 fd.append('is_third_party_sponsor',  false);
-                fd.append('date_joined',             document.getElementById('dateJoined').value || '');
-                fd.append('reports_to',              document.getElementById('reportsTo').value.trim());
             }
 
             const idFile    = document.getElementById('idCopyUpload').files[0];
@@ -1599,8 +1611,13 @@
             });
             const sponsorEl = document.getElementById('edit_is_third_party_sponsor');
             if (sponsorEl) payload.is_third_party_sponsor = sponsorEl.checked;
-            const dateEl = document.getElementById('edit_date_joined');
-            if (dateEl) payload.date_joined = dateEl.value || null;
+
+            // Date fields that need special handling
+            const dateFields = ['date_joined', 'iqama_expiry_date', 'passport_expiry_date', 'insurance_expiry_date'];
+            dateFields.forEach(f => {
+                const el = document.getElementById('edit_' + f);
+                if (el) payload[f] = el.value || null;
+            });
             try {
                 const r = await api(`/api/v1/applications/${currentlyViewingAppId}`, {
                     method: 'PUT',
@@ -1699,6 +1716,10 @@
                     ${detailField('Reports To', 'reports_to', a.reports_to)}
                     ${detailField('Gov ID Type', 'gov_id_type', a.gov_id_type)}
                     ${detailField('Gov ID Number', 'gov_id_number', a.gov_id_number)}
+                    ${detailField('Iqama Expiry', 'iqama_expiry_date', a.iqama_expiry_date, { date: true })}
+                    ${detailField('Passport Number', 'passport_number', a.passport_number)}
+                    ${detailField('Passport Expiry', 'passport_expiry_date', a.passport_expiry_date, { date: true })}
+                    ${detailField('Insurance Expiry', 'insurance_expiry_date', a.insurance_expiry_date, { date: true })}
                     ${detailField('Blood Type', 'blood_type', a.blood_type)}
                     ${detailField('Mobile', 'mobile_number', a.mobile_number)}
                     ${detailField('WhatsApp', 'whatsapp_number', a.whatsapp_number)}
