@@ -1023,14 +1023,14 @@
         document.addEventListener('DOMContentLoaded', async () => {
             populateCountryDropdown();
             applyFormVariant('');
-            // Try to resume an existing session before showing login
+            // Show login immediately to avoid blank screen while auth check is in flight
+            showStaffLogin();
             const me = await loadCurrentUser();
             if (me) {
                 currentUser = me;
+                _hideAllAuthOverlays();
                 if (me.must_change_password) { showChangePassword(); }
                 else { await afterSuccessfulLogin(); }
-            } else {
-                showStaffLogin();
             }
         });
 
