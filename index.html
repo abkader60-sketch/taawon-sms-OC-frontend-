@@ -637,6 +637,7 @@
                         <div class="admin-tab"        id="atab-external"  onclick="switchAdminTab('external')">External Submitters</div>
                         <div class="admin-tab"        id="atab-lookups"   onclick="switchAdminTab('lookups')">Lookup Tables</div>
                         <div class="admin-tab"        id="atab-settings"  onclick="switchAdminTab('settings')">System Settings</div>
+                        <div class="admin-tab"        id="atab-import"    onclick="switchAdminTab('import')">Import Backlog</div>
                     </div>
 
                     <div id="apane-users" class="admin-pane">
@@ -716,6 +717,21 @@
                         <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">System Settings</h3>
                         <p class="card-subtitle" style="margin-top:0;">System-wide configuration. Changes take effect immediately.</p>
                         <div id="adminSettingsContainer"><p style="color:#888;">Loading...</p></div>
+                    </div>
+
+                    <div id="apane-import" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Import Backlog Applications</h3>
+                        <p class="card-subtitle" style="margin-top:0;">Upload an Excel file to bulk-import already-issued ID applications. Records are created in <strong>Approved</strong> status.</p>
+                        <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:32px;text-align:center;margin-bottom:16px;">
+                            <p style="margin:0 0 12px;font-size:14px;color:#555;">
+                                Expected columns: <code>full_name*</code>, <code>organization*</code>, <code>employee_number</code>, <code>gov_id_number</code>, <code>blood_type</code>, <code>mobile_number</code>, <code>whatsapp_number</code>, <code>email</code>, <code>date_joined</code>, <code>reports_to</code>
+                            </p>
+                            <p style="margin:0 0 16px;font-size:13px;color:#888;">Column headers are flexible — e.g. <em>Full Name</em>, <em>Company</em>, <em>Phone</em> all work.</p>
+                            <input type="file" id="backlogImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
+                            <br>
+                            <button class="btn-submit" onclick="importBacklogExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                        </div>
+                        <div id="backlogImportResult"></div>
                     </div>
                 </div>
             </div>
@@ -1787,13 +1803,53 @@
         // ADMIN PANEL (unchanged from v0.5)
         // ==============================================
         function switchAdminTab(tab) {
-            ['users','roles','groups','external','lookups','settings'].forEach(t => {
+            ['users','roles','groups','external','lookups','settings','import'].forEach(t => {
                 const tabEl = document.getElementById('atab-' + t);
                 const paneEl = document.getElementById('apane-' + t);
                 if (tabEl) tabEl.classList.toggle('active', t === tab);
                 if (paneEl) paneEl.classList.toggle('hidden', t !== tab);
             });
             if (tab === 'lookups') loadLookupTablesList();
+        }
+
+        async function importBacklogExcel() {
+            const fileInput = document.getElementById('backlogImportFile');
+            const resultDiv = document.getElementById('backlogImportResult');
+            const file = fileInput.files[0];
+            if (!file) { resultDiv.innerHTML = '<div class="status-box error-msg">Please select an Excel file first.</div>'; return; }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            const btn = document.querySelector('#apane-import .btn-submit');
+            btn.disabled = true; btn.textContent = 'Importing...';
+            resultDiv.innerHTML = '<div class="status-box" style="color:#888;">Importing... this may take a moment.</div>';
+
+            try {
+                const r = await api('/api/v1/admin/applications/import', { method: 'POST', body: fd, headers: {} });
+                const data = await r.json();
+                if (r.ok) {
+                    let html = `<div class="status-box success-msg">✔ Imported: <strong>${data.imported}</strong> application(s)`;
+                    if (data.skipped > 0) html += `, skipped: <strong>${data.skipped}</strong>`;
+                    html += `</div>`;
+                    if (data.application_ids && data.application_ids.length) {
+                        html += `<p style="font-size:13px;color:#555;margin-top:8px;">Application IDs: ${data.application_ids.map(id => `<a href="javascript:void(0)" onclick="openViewModal(${id})">#${id}</a>`).join(', ')}</p>`;
+                    }
+                    if (data.errors && data.errors.length) {
+                        html += `<div style="margin-top:12px;background:#fff3f3;padding:12px;border-radius:6px;font-size:13px;"><strong style="color:#c62828;">${data.errors.length} error(s):</strong><ul style="margin:6px 0 0;padding-left:20px;">${data.errors.slice(0,10).map(e => `<li style="color:#555;">${escapeHtml(e)}</li>`).join('')}</ul></div>`;
+                    }
+                    resultDiv.innerHTML = html;
+                    fileInput.value = '';
+                    // Refresh dashboard lists
+                    fetchAllApplications();
+                    fetchPendingApplications();
+                } else {
+                    resultDiv.innerHTML = `<div class="status-box error-msg">Import failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="status-box error-msg">Connection failed: ${escapeHtml(e.message || e)}</div>`;
+            } finally {
+                btn.disabled = false; btn.textContent = 'Upload & Import';
+            }
         }
 
         async function loadAdminAll() {
