@@ -82,6 +82,9 @@
         .btn-save:hover { background-color: #008a43; }
         .btn-export  { background-color: #00a651; color: white; border: 1px solid #008a43; padding: 8px 16px; }
         .btn-export:hover { background-color: #008a43; }
+        .btn-small   { padding: 2px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; }
+        .btn-danger  { background-color: #c62828; color: white; border: 1px solid #b71c1c; }
+        .btn-danger:hover { background-color: #b71c1c; }
         .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .refresh-btn { background-color: white; border: 1px solid #ddd; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; color: #555; }
         .refresh-btn:hover { background-color: #f0f0f0; }
@@ -1680,13 +1683,34 @@
             const badgeClass = stateBadgeClass(a.workflow_state);
 
             let attHtml = '';
+            const existingTypes = new Set((data.attachments || []).map(at => at.attachment_type));
             if (data.attachments && data.attachments.length) {
                 attHtml = data.attachments.map(at => {
                     const sizeKb = at.file_size_bytes ? (at.file_size_bytes / 1024).toFixed(1) + ' KB' : '';
                     const safeName = escapeHtml(at.original_filename || 'file');
-                    return `<a class="attachment-link" href="javascript:void(0)" onclick="previewAttachment(${a.application_id}, ${at.attachment_id}, '${safeName.replace(/'/g, "\\'")}', '${at.mime_type || ''}')">📎 ${escapeHtml(prettyAttachmentType(at.attachment_type))}: ${safeName}${sizeKb ? `<span style="opacity:0.7;font-weight:normal;"> (${sizeKb})</span>` : ''}</a>`;
+                    const delBtn = currentEditMode
+                        ? `<button class="btn-small btn-danger" style="margin-left:8px;padding:2px 8px;font-size:11px;" onclick="deleteAttachment(${a.application_id}, ${at.attachment_id}, '${safeName.replace(/'/g, "\\'")}')" title="Delete attachment">&times;</button>`
+                        : '';
+                    return `<div style="margin:4px 0;"><a class="attachment-link" href="javascript:void(0)" onclick="previewAttachment(${a.application_id}, ${at.attachment_id}, '${safeName.replace(/'/g, "\\'")}', '${at.mime_type || ''}')">📎 ${escapeHtml(prettyAttachmentType(at.attachment_type))}: ${safeName}${sizeKb ? `<span style="opacity:0.7;font-weight:normal;"> (${sizeKb})</span>` : ''}</a>${delBtn}</div>`;
                 }).join('');
             } else { attHtml = `<span class="no-perm-text">No attachments uploaded.</span>`; }
+            if (currentEditMode) {
+                const allTypes = ['id_copy', 'insurance', 'photo', 'legal_agreement'];
+                const missingTypes = allTypes.filter(t => !existingTypes.has(t));
+                if (missingTypes.length) {
+                    attHtml += `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee;">
+                        <p style="font-size:13px;color:#555;margin:0 0 8px;"><strong>Add attachment:</strong></p>`;
+                    missingTypes.forEach(t => {
+                        const label = prettyAttachmentType(t);
+                        attHtml += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                            <span style="font-size:13px;min-width:120px;">${label}:</span>
+                            <input type="file" id="attach_new_${t}" accept=".pdf,image/*" style="font-size:12px;flex:1;">
+                            <button class="btn-small btn-action btn-view" style="padding:4px 12px;" onclick="uploadAttachment(${a.application_id}, '${t}')">Upload</button>
+                        </div>`;
+                    });
+                    attHtml += `</div>`;
+                }
+            }
 
             const histHtml = (data.history || []).map(h => {
                 const dt = new Date(h.action_timestamp).toLocaleString();
@@ -2569,6 +2593,29 @@
             }
         }
 
+        async function uploadAttachment(applicationId, attachmentType) {
+            const fileInput = document.getElementById('attach_new_' + attachmentType);
+            const file = fileInput?.files?.[0];
+            if (!file) { alert('Please select a file first.'); return; }
+            const fd = new FormData();
+            fd.append('attachment_type', attachmentType);
+            fd.append('file', file);
+            try {
+                const r = await api(`/api/v1/applications/${applicationId}/attachments`, { method: 'POST', body: fd, headers: {} });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); alert(`Upload failed: ${e.detail || r.statusText}`); return; }
+                fileInput.value = '';
+                await refreshViewModalContent();
+            } catch (e) { alert(`Upload error: ${e.message}`); }
+        }
+
+        async function deleteAttachment(applicationId, attachmentId, filename) {
+            if (!confirm(`Delete "${filename}"? This cannot be undone.`)) return;
+            try {
+                const r = await api(`/api/v1/applications/${applicationId}/attachments/${attachmentId}`, { method: 'DELETE' });
+                if (!r.ok) { const e = await r.json().catch(() => ({})); alert(`Delete failed: ${e.detail || r.statusText}`); return; }
+                await refreshViewModalContent();
+            } catch (e) { alert(`Delete error: ${e.message}`); }
+        }
 
         function escapeHtml(s) {
             if (s === null || s === undefined) return '';
