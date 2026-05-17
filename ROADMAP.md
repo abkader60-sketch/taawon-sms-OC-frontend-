@@ -63,6 +63,7 @@
 - Email and WhatsApp notifications
 - Workflow history and audit trail
 - Deployment on Railway (two repos, auto-deploy)
+- Bulk backlog import from Excel (admin panel)
 
 ### Known Issues
 - **Lookup table data drift**: Database on Railway may have different lookup values than code expects (e.g., "Subcontractors" vs "Subcontractor (other)"). Case-insensitive matching mitigates this.
