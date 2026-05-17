@@ -68,6 +68,22 @@
 
 ---
 
+## Operations
+
+### `init-db` endpoint
+- `POST /api/v1/admin/init-db` creates tables, seeds data, and runs migrations
+- **Auth-protected** on populated databases (requires `manage_system_settings` permission)
+- **Unauth allowed** on fresh databases (no `App_Users` table yet)
+- All SQL is idempotent: `CREATE TABLE IF NOT EXISTS`, `ON CONFLICT DO NOTHING`, `ALTER TABLE ADD COLUMN IF NOT EXISTS`
+- Safe to re-run — won't drop tables or overwrite existing data
+
+### Backup & Restore
+- Railway PostgreSQL add-on provides daily automatic snapshots
+- Manual backup via `pg_dump`, restore via `psql`
+- After restore, run `init-db` to catch schema columns added since the backup
+
+---
+
 ## Storage
 
 | Data | Storage | Production | Local dev |
@@ -80,6 +96,7 @@
 - **Local filesystem** used for development only
 - **MinIO** (S3-compatible) on Railway for production — survives deploys, accessible across instances
 - Backend auto-detects MinIO via `MINIO_ENDPOINT` env var; falls back to local filesystem if not set
+- Accepts multiple env var naming conventions: `MINIO_ACCESS_KEY` / `MINIO_ROOT_USER` / `AWS_ACCESS_KEY_ID`, `MINIO_SECRET_KEY` / `MINIO_ROOT_PASSWORD` / `AWS_SECRET_ACCESS_KEY`
 - Files stored with key pattern: `app_{id}/{type}_{uuid}.{ext}`
 
 ---

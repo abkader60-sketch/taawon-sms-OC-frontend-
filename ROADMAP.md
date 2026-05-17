@@ -65,18 +65,11 @@
 - Deployment on Railway (two repos, auto-deploy)
 
 ### Known Issues
-- **Attachment persistence on Railway**: Attachments stored on ephemeral filesystem are lost on deploy. MinIO/S3 integration in progress.
-- **Existing attachments broken on Railway**: Previously uploaded files (now deleted from filesystem) show "File missing on disk" — requires re-upload after MinIO is set up.
 - **Lookup table data drift**: Database on Railway may have different lookup values than code expects (e.g., "Subcontractors" vs "Subcontractor (other)"). Case-insensitive matching mitigates this.
 
 ---
 
 ## Upcoming
-
-### 🔧 MinIO / S3 Attachment Storage
-- Integrate Railway MinIO add-on for persistent attachment storage
-- Backend auto-detects MinIO via env vars; falls back to local filesystem
-- Zero-downtime migration path: new uploads go to MinIO, old files remain accessible from disk
 
 ### 📅 Email Delivery Reliability
 - Current SMTP (Gmail) works but can be flagged as spam
@@ -113,6 +106,75 @@
 
 #### Activity log
 - Searchable audit log of all user actions (not just workflow state changes)
+
+---
+
+## Operations Guide
+
+### Database initialization (`init-db`)
+
+**When to run**: Only on a completely fresh database (first deployment or after provisioning a new PostgreSQL add-on).
+
+**What it does** (all safe to re-run):
+- Creates all tables (`CREATE TABLE IF NOT EXISTS` — skips existing)
+- Seeds default data (roles, admin users, lookup tables — `ON CONFLICT DO NOTHING` — skips existing)
+- Replaces `temp_hash_123` placeholders with real bcrypt hashes (only affects rows still holding placeholder)
+- Runs schema migrations (e.g., adding new columns via `ALTER TABLE ADD COLUMN IF NOT EXISTS`)
+
+**Caution**: On a populated DB the endpoint is **auth-protected** — you must be logged in as an admin with `manage_system_settings` permission. On a fresh DB (no users table), unauth calls are allowed.
+
+**Command**:
+```bash
+curl -X POST https://securitysms-production.up.railway.app/api/v1/admin/init-db \
+  -H "Content-Type: application/json" -d "{}"
+```
+
+### Backup & Restore
+
+Railway PostgreSQL add-on has **daily automatic backups** (see Dashboard → PostgreSQL → Backups).
+
+**Manual backup** (run from any machine with `pg_dump`):
+```bash
+pg_dump --no-owner --no-privileges \
+  "postgresql://postgres:PASSWORD@mainline.proxy.rlwy.net:PORT/railway" \
+  > sms_backup_$(date +%F).sql
+```
+
+**Restore** (loading into an existing or new database):
+```bash
+# 1. Load the backup
+psql "postgresql://postgres:PASSWORD@new-host:PORT/railway" < sms_backup_2026-05-17.sql
+
+# 2. Ensure schema is up-to-date (safe — won't overwrite existing data)
+curl -X POST https://securitysms-production.up.railway.app/api/v1/admin/init-db \
+  -H "Content-Type: application/json" -d "{}"
+```
+
+**Important**: Always call `init-db` after a restore to catch any schema columns added since the backup was made.
+
+### MinIO / S3 Attachment Storage
+
+**Setup on Railway**:
+1. Provision a MinIO add-on in the same Railway project as the backend
+2. The following environment variables are automatically injected (or set manually):
+
+   | Variable | Example | Purpose |
+   |---|---|---|
+   | `MINIO_ENDPOINT` | `minio.railway.internal:9000` | MinIO server address |
+   | `MINIO_ACCESS_KEY` | `minio_access_key` | S3 access key |
+   | `MINIO_SECRET_KEY` | `minio_secret_key` | S3 secret key |
+   | `MINIO_BUCKET` | `attachments` | Bucket name (default: `attachments`) |
+
+   The backend also accepts legacy names `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` and standard AWS names `AWS_ENDPOINT_URL` / `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`.
+
+3. After setting variables, **restart the backend service** on Railway.
+
+**How it works**:
+- Backend auto-detects MinIO at startup when `MINIO_ENDPOINT` is set
+- Creates the bucket if it doesn't exist
+- All new uploads go to MinIO; old files on local filesystem remain accessible
+- Attachment preview/download is proxied through the backend (never served via public URL)
+- If MinIO is unavailable, falls back to local filesystem
 
 ---
 
