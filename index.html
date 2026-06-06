@@ -415,16 +415,6 @@
                                 <span class="field-hint">Choose the specific subcontractor company from the list.</span>
                             </div>
 
-                            <div class="form-group">
-                                <label>ID Type *</label>
-                                <select id="idType" required>
-                                    <option value="" disabled selected>Select ID type</option>
-                                    <option value="New Project ID">New Project ID</option>
-                                    <option value="Re-New Project ID">Re-New Project ID</option>
-                                    <option value="Replacement for a Damaged ID">Replacement for a Damaged ID</option>
-                                    <option value="Replacement for a LOST ID">Replacement for a LOST ID</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
 
@@ -433,11 +423,26 @@
                         <div class="card-title">2. Applicant Details</div>
                         <div class="form-grid">
                             <div class="form-group">
+                                <label>ID Type *</label>
+                                <div style="display:flex;gap:16px;padding-top:4px;">
+                                    <label style="font-weight:normal;font-size:14px;cursor:pointer;">
+                                        <input type="radio" name="govIdType" value="Saudi National ID" required> Saudi National ID
+                                    </label>
+                                    <label style="font-weight:normal;font-size:14px;cursor:pointer;">
+                                        <input type="radio" name="govIdType" value="Iqama" required> Iqama
+                                    </label>
+                                    <label style="font-weight:normal;font-size:14px;cursor:pointer;">
+                                        <input type="radio" name="govIdType" value="Passport" required> Passport
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
                                 <label>Full Name (as per Iqama / Passport) *</label>
                                 <input type="text" id="fullName" required>
                             </div>
 
-                            <div class="form-group full-only">
+                            <div class="form-group">
                                 <label>Gender *</label>
                                 <select id="gender">
                                     <option value="" disabled selected>Select gender</option>
@@ -515,8 +520,8 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Safety Induction Date *</label>
-                                <input type="date" id="safetyInductionDate" required>
+                                <label>Safety Induction Date</label>
+                                <input type="date" id="safetyInductionDate">
                             </div>
 
                             <div class="form-group">
@@ -588,22 +593,6 @@
                                 <span class="field-hint">Required for all forms.</span>
                             </div>
 
-                            <div class="form-group full-only full-width" style="padding:12px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:4px;">
-                                <div class="checkbox-group">
-                                    <input type="checkbox" id="sponsorIsThirdParty" onchange="handleSponsorChange()">
-                                    <label for="sponsorIsThirdParty" style="color:#c62828;">
-                                        The sponsor on the Iqama is <strong>not</strong> the supplier or subcontractor (a Legal Agreement attachment is required).
-                                        <br><span class="field-hint" style="color:#e57373;">The approver will verify this declaration.</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="form-group hidden" id="legalAgreementWrapper" style="margin-top:0;">
-                                <label>Legal Agreement *</label>
-                                <input type="file" id="legalAgreementUpload" accept=".pdf,image/*">
-                                <span class="field-hint">Required because the Iqama sponsor is a third party.</span>
-                            </div>
-
                             <div class="form-group full-only">
                                 <label>Insurance Validity *</label>
                                 <input type="file" id="insuranceUpload" accept="image/*,.pdf">
@@ -616,10 +605,25 @@
                                 <span class="field-hint">Required for full form.</span>
                             </div>
 
-                            <div class="form-group full-only">
-                                <label>Personal Photo</label>
-                                <input type="file" id="photoUpload" accept="image/*">
-                                <span class="field-hint">Recommended. Photo size: 4 x 6 cm with white background.</span>
+                            <div class="form-group">
+                                <label>Personal Photo *</label>
+                                <input type="file" id="photoUpload" accept="image/*" required>
+                                <span class="field-hint" style="font-weight:bold;">Photo size: 4 x 6 cm with white background.</span>
+                            </div>
+
+                            <div class="form-group full-only full-width" style="padding:12px 12px 4px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:4px;" id="legalDeclarationWrapper">
+                                <div class="checkbox-group" style="margin-bottom:0;">
+                                    <input type="checkbox" id="sponsorIsThirdParty" onchange="handleSponsorChange()">
+                                    <label for="sponsorIsThirdParty" style="color:#c62828;">
+                                        The sponsor on the Iqama is <strong>not</strong> the supplier or subcontractor (a Legal Agreement attachment is required).
+                                        <br><span class="field-hint" style="color:#e57373;">The approver will verify this declaration.</span>
+                                    </label>
+                                </div>
+                                <div id="legalAgreementBelow" style="margin-top:8px;display:none;">
+                                    <label style="font-size:12px;color:#555;font-weight:600;display:block;margin-bottom:4px;">Legal Agreement *</label>
+                                    <input type="file" id="legalAgreementUpload" accept=".pdf,image/*">
+                                    <span class="field-hint">Upload the Legal Agreement document.</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -641,6 +645,7 @@
                         <div class="admin-tab"        id="atab-lookups"   onclick="switchAdminTab('lookups')">Lookup Tables</div>
                         <div class="admin-tab"        id="atab-settings"  onclick="switchAdminTab('settings')">System Settings</div>
                         <div class="admin-tab"        id="atab-import"    onclick="switchAdminTab('import')">Import Backlog</div>
+                        <div class="admin-tab"        id="atab-nongrata" onclick="switchAdminTab('nongrata')">Non Grata</div>
                     </div>
 
                     <div id="apane-users" class="admin-pane">
@@ -735,6 +740,21 @@
                             <button class="btn-submit" onclick="importBacklogExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
                         </div>
                         <div id="backlogImportResult"></div>
+                    </div>
+
+                    <div id="apane-nongrata" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Non Grata List</h3>
+                        <p class="card-subtitle" style="margin-top:0;">Individuals flagged as non grata. Fields: full name, gender, nationality, ID type, ID number, date of birth.</p>
+                        <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
+                            <p style="margin:0 0 12px;font-size:14px;color:#555;">
+                                Import from Excel — columns: <code>full_name*</code>, <code>gender</code>, <code>nationality</code>, <code>gov_id_type</code>, <code>gov_id_number</code>, <code>date_of_birth</code>
+                            </p>
+                            <input type="file" id="nonGrataImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
+                            <br>
+                            <button class="btn-submit" onclick="importNonGrataExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                        </div>
+                        <div id="nonGrataImportResult"></div>
+                        <div id="nonGrataListContainer"><p style="color:#888;">Loading...</p></div>
                     </div>
                 </div>
             </div>
@@ -1237,10 +1257,10 @@
 
         function handleSponsorChange() {
             const isThirdParty = document.getElementById('sponsorIsThirdParty').checked;
-            const wrapper = document.getElementById('legalAgreementWrapper');
+            const below = document.getElementById('legalAgreementBelow');
             const upload  = document.getElementById('legalAgreementUpload');
-            if (isThirdParty) { wrapper.classList.remove('hidden'); upload.required = true; }
-            else { wrapper.classList.add('hidden'); upload.required = false; upload.value = ""; }
+            if (isThirdParty) { below.style.display = 'block'; upload.required = true; }
+            else { below.style.display = 'none'; upload.required = false; upload.value = ""; }
         }
 
         function handleWhatsAppChange() {
@@ -1278,7 +1298,8 @@
             fd.append('organization',           document.getElementById('companyName').value);
             fd.append('email',                  document.getElementById('email').value.trim());
             fd.append('mobile_number',          document.getElementById('mobileNo').value.trim());
-            fd.append('gov_id_type',            'Iqama');
+            const govIdTypeEl = document.querySelector('input[name="govIdType"]:checked');
+            fd.append('gov_id_type',            govIdTypeEl ? govIdTypeEl.value : 'Iqama');
             fd.append('gov_id_number',          document.getElementById('iqamaNumber').value.trim());
             fd.append('blood_type',             document.getElementById('bloodType').value);
             fd.append('employee_number',        document.getElementById('employeeNo').value.trim() || 'N/A');
@@ -1287,6 +1308,12 @@
             fd.append('reports_to',             document.getElementById('reportsTo').value.trim() || '');
             fd.append('iqama_expiry_date',      document.getElementById('iqamaExpiry').value || '');
             fd.append('passport_expiry_date',   document.getElementById('passportExpiry').value || '');
+            fd.append('gender',                 document.getElementById('gender').value || '');
+            fd.append('nationality',            document.getElementById('nationality').value || '');
+            fd.append('date_of_birth',          document.getElementById('dateOfBirth').value || '');
+            fd.append('passport_number',        document.getElementById('passportNo').value.trim() || '');
+            fd.append('language',               document.getElementById('language').value || '');
+            fd.append('safety_induction_date',  document.getElementById('safetyInductionDate').value || '');
 
             const sameAsWa = document.getElementById('sameAsWhatsapp').checked;
             const mobile = document.getElementById('mobileNo').value.trim();
@@ -1307,8 +1334,8 @@
             const photoFile = document.getElementById('photoUpload').files[0];
             const legalFile = document.getElementById('legalAgreementUpload').files[0];
             if (idFile)    fd.append('id_copy', idFile);
+            if (photoFile) fd.append('photo', photoFile);
             if (formVariant === 'full' && insFile)   fd.append('insurance', insFile);
-            if (formVariant === 'full' && photoFile) fd.append('photo', photoFile);
             if (formVariant === 'full' && legalFile) fd.append('legal_agreement', legalFile);
 
             try {
@@ -1622,7 +1649,8 @@
 
         async function saveEdits() {
             const fields = ['full_name','job_title','employee_number','organization','subcontractor',
-                            'gov_id_type','gov_id_number','blood_type','mobile_number','whatsapp_number','email','reports_to'];
+                            'gov_id_type','gov_id_number','blood_type','mobile_number','whatsapp_number','email','reports_to',
+                            'gender','nationality','date_of_birth','passport_number','language','safety_induction_date'];
             const payload = {};
             fields.forEach(f => {
                 const el = document.getElementById('edit_' + f);
@@ -1632,7 +1660,7 @@
             if (sponsorEl) payload.is_third_party_sponsor = sponsorEl.checked;
 
             // Date fields that need special handling
-            const dateFields = ['date_joined', 'iqama_expiry_date', 'passport_expiry_date', 'insurance_expiry_date'];
+            const dateFields = ['date_joined', 'iqama_expiry_date', 'passport_expiry_date', 'insurance_expiry_date', 'date_of_birth', 'safety_induction_date'];
             dateFields.forEach(f => {
                 const el = document.getElementById('edit_' + f);
                 if (el) payload[f] = el.value || null;
@@ -1741,13 +1769,45 @@
                 ? '<span class="group-tag group-tag-1" style="margin-left: 8px;">Brief form</span>'
                 : (a.form_variant === 'full' ? '<span class="group-tag group-tag-2" style="margin-left: 8px;">Comprehensive form</span>' : '');
 
+            // Find photo attachment for inline display — load via fetch as data URL
+            const photoAtt = (data.attachments || []).find(at => at.attachment_type === 'photo');
+            let photoPlaceholder = '';
+            if (photoAtt) {
+                photoPlaceholder = `<div id="photoPreviewContainer" style="float:right;margin:0 0 12px 16px;width:120px;min-height:150px;text-align:center;background:#f0f0f0;border-radius:6px;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;">Loading photo...</div>`;
+                // Fetch the photo asynchronously and convert to data URL
+                (async () => {
+                    try {
+                        const r = await api(`/api/v1/applications/${a.application_id}/attachment/${photoAtt.attachment_id}?preview=true`);
+                        if (!r.ok) return;
+                        const blob = await r.blob();
+                        const dataUrl = await new Promise((res, rej) => {
+                            const reader = new FileReader();
+                            reader.onload = () => res(reader.result);
+                            reader.onerror = rej;
+                            reader.readAsDataURL(blob);
+                        });
+                        const container = document.getElementById('photoPreviewContainer');
+                        if (container) {
+                            container.innerHTML = `<a href="javascript:void(0)" onclick="previewAttachment(${a.application_id}, ${photoAtt.attachment_id}, '${escapeHtml(photoAtt.original_filename || 'photo')}', '${photoAtt.mime_type || ''}')">
+                                <img src="${dataUrl}" alt="Photo" style="width:120px;height:150px;object-fit:cover;border-radius:4px;cursor:pointer;">
+                            </a>
+                            <div style="font-size:10px;color:#888;margin-top:2px;">Click to enlarge</div>`;
+                        }
+                    } catch(e) {}
+                })();
+            }
+
             return `
                 ${editingNotice}
+                ${photoHtml}
                 <div class="section-heading">Status</div>
                 <p><span class="badge ${badgeClass}">${escapeHtml(a.workflow_state)}</span>${variantTag}</p>
                 <div class="section-heading">Applicant Details</div>
                 <dl class="detail-grid">
                     ${detailField('Full Name', 'full_name', a.full_name)}
+                    ${detailField('Gender', 'gender', a.gender)}
+                    ${detailField('Nationality', 'nationality', a.nationality)}
+                    ${detailField('Date of Birth', 'date_of_birth', a.date_of_birth, { date: true })}
                     ${detailField('Job / Trade', 'job_title', a.job_title)}
                     ${detailField('Employee No.', 'employee_number', a.employee_number)}
                     ${detailField('Organization', 'organization', a.organization)}
@@ -1761,6 +1821,8 @@
                     ${detailField('Passport Expiry', 'passport_expiry_date', a.passport_expiry_date, { date: true })}
                     ${detailField('Insurance Expiry', 'insurance_expiry_date', a.insurance_expiry_date, { date: true })}
                     ${detailField('Blood Type', 'blood_type', a.blood_type)}
+                    ${detailField('Language', 'language', a.language)}
+                    ${detailField('Safety Induction Date', 'safety_induction_date', a.safety_induction_date, { date: true })}
                     ${detailField('Mobile', 'mobile_number', a.mobile_number)}
                     ${detailField('WhatsApp', 'whatsapp_number', a.whatsapp_number)}
                     ${detailField('Email', 'email', a.email)}
@@ -1827,13 +1889,14 @@
         // ADMIN PANEL (unchanged from v0.5)
         // ==============================================
         function switchAdminTab(tab) {
-            ['users','roles','groups','external','lookups','settings','import'].forEach(t => {
+            ['users','roles','groups','external','lookups','settings','import','nongrata'].forEach(t => {
                 const tabEl = document.getElementById('atab-' + t);
                 const paneEl = document.getElementById('apane-' + t);
                 if (tabEl) tabEl.classList.toggle('active', t === tab);
                 if (paneEl) paneEl.classList.toggle('hidden', t !== tab);
             });
             if (tab === 'lookups') loadLookupTablesList();
+            if (tab === 'nongrata') loadNonGrata();
         }
 
         async function importBacklogExcel() {
@@ -1866,6 +1929,68 @@
                     // Refresh dashboard lists
                     fetchAllApplications();
                     fetchPendingApplications();
+                } else {
+                    resultDiv.innerHTML = `<div class="status-box error-msg">Import failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="status-box error-msg">Connection failed: ${escapeHtml(e.message || e)}</div>`;
+            } finally {
+                btn.disabled = false; btn.textContent = 'Upload & Import';
+            }
+        }
+
+        // ==============================================
+        // NON GRATA
+        // ==============================================
+        async function loadNonGrata() {
+            const container = document.getElementById('nonGrataListContainer');
+            try {
+                const r = await api('/api/v1/admin/non-grata');
+                if (!r.ok) { container.innerHTML = '<p class="status-box error-msg">Failed to load Non Grata list.</p>'; return; }
+                const data = await r.json();
+                const entries = data.entries || [];
+                if (!entries.length) {
+                    container.innerHTML = '<p style="color:#888;">No entries yet. Import an Excel file above.</p>';
+                    return;
+                }
+                let html = '<table class="data-table"><thead><tr><th>#</th><th>Full Name</th><th>Gender</th><th>Nationality</th><th>ID Type</th><th>ID Number</th><th>Date of Birth</th><th>Added On</th></tr></thead><tbody>';
+                entries.forEach(e => {
+                    const dob = e.date_of_birth ? new Date(e.date_of_birth).toLocaleDateString() : '-';
+                    const added = e.created_at ? new Date(e.created_at).toLocaleDateString() : '-';
+                    html += `<tr><td>${e.ng_id}</td><td>${escapeHtml(e.full_name)}</td><td>${escapeHtml(e.gender || '-')}</td><td>${escapeHtml(e.nationality || '-')}</td><td>${escapeHtml(e.gov_id_type || '-')}</td><td>${escapeHtml(e.gov_id_number || '-')}</td><td>${dob}</td><td>${added}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<p class="status-box error-msg">Error: ${escapeHtml(e.message)}</p>`;
+            }
+        }
+
+        async function importNonGrataExcel() {
+            const fileInput = document.getElementById('nonGrataImportFile');
+            const resultDiv = document.getElementById('nonGrataImportResult');
+            const file = fileInput.files[0];
+            if (!file) { resultDiv.innerHTML = '<div class="status-box error-msg">Please select an Excel file first.</div>'; return; }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            const btn = document.querySelector('#apane-nongrata .btn-submit');
+            btn.disabled = true; btn.textContent = 'Importing...';
+            resultDiv.innerHTML = '<div class="status-box" style="color:#888;">Importing...</div>';
+
+            try {
+                const r = await api('/api/v1/admin/non-grata/import', { method: 'POST', body: fd, headers: {} });
+                const data = await r.json();
+                if (r.ok) {
+                    let html = `<div class="status-box success-msg">✔ Imported: <strong>${data.imported}</strong>`;
+                    if (data.skipped > 0) html += `, skipped: <strong>${data.skipped}</strong>`;
+                    html += `</div>`;
+                    if (data.errors && data.errors.length) {
+                        html += `<div style="margin-top:12px;background:#fff3f3;padding:12px;border-radius:6px;font-size:13px;"><strong style="color:#c62828;">${data.errors.length} error(s):</strong><ul style="margin:6px 0 0;padding-left:20px;">${data.errors.slice(0,10).map(e => `<li style="color:#555;">${escapeHtml(e)}</li>`).join('')}</ul></div>`;
+                    }
+                    resultDiv.innerHTML = html;
+                    fileInput.value = '';
+                    loadNonGrata();
                 } else {
                     resultDiv.innerHTML = `<div class="status-box error-msg">Import failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
                 }
