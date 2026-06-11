@@ -1624,26 +1624,49 @@
             setTimeout(() => { statusDiv.classList.add('hidden'); }, 4000);
         }
 
-        async function exportToExcel() {
-            try {
-                const r = await api('/api/v1/applications/export');
-                if (!r.ok) {
-                    alert('Failed to export: ' + r.status);
-                    return;
+        function exportToExcel() {
+            // Use XMLHttpRequest instead of fetch for better binary download support
+            const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            const url = `${API_BASE}/api/v1/applications/export`;
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.withCredentials = true;
+            xhr.responseType = 'blob';
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const blob = xhr.response;
+                    if (blob && blob.size > 0) {
+                        const objUrl = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = objUrl;
+                        a.download = `taawon_p3_applications_${ts}.xlsx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(objUrl);
+                    } else {
+                        alert('Export failed: empty response');
+                    }
+                } else {
+                    // Try to read error detail
+                    const reader = new FileReader();
+                    reader.onload = function () {
+                        let msg = xhr.status + '';
+                        try { const j = JSON.parse(reader.result); msg = j.detail || msg; } catch (e) {}
+                        alert('Export failed: ' + msg);
+                    };
+                    reader.onerror = function () {
+                        alert('Export failed: ' + xhr.status);
+                    };
+                    reader.readAsText(xhr.response);
                 }
-                const blob = await r.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                a.download = `taawon_p3_applications_${ts}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            } catch (e) {
-                alert('Export failed: ' + (e.message || e));
-            }
+            };
+            xhr.onerror = function () {
+                // XMLHttpRequest network error — try fallback with window.open
+                alert('Export may fail with fetch. Trying direct download...');
+                window.open(url, '_blank');
+            };
+            xhr.send();
         }
 
         async function downloadAttachment(applicationId, attachmentId, originalName) {
