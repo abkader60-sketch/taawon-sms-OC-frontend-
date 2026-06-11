@@ -343,6 +343,16 @@
                         <div class="card-title-actions"><button class="refresh-btn btn-export" onclick="exportToExcel()">⤓ Export to Excel</button></div>
                     </div>
                     <div class="card-subtitle">Includes approved, rejected, and pending. Click any App ID or View button to see full details.</div>
+                    <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+                        <input type="text" id="appSearch" placeholder="Search by name, org, ID..." oninput="filterApplications()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+                        <select id="appStatusFilter" onchange="filterApplications()" style="padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;background:#fff;">
+                            <option value="">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Pending Security Clearance">Pending Security Clearance</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
                     <table>
                         <thead>
                             <tr><th>App ID</th><th>Date Submitted</th><th>Full Name</th><th>Organization</th><th>Status</th><th></th></tr>
@@ -439,7 +449,11 @@
 
                             <div class="form-group">
                                 <label>Full Name (as per Iqama / Passport) *</label>
-                                <input type="text" id="fullName" required>
+                                <div style="display:flex;gap:8px;align-items:stretch;">
+                                    <input type="text" id="fullName" required style="flex:1;" oninput="onFullNameChange()">
+                                    <button type="button" class="btn-action btn-view" onclick="lookupInduction()" title="Search Induction Workbench for auto-fill" style="white-space:nowrap;padding:8px 12px;font-size:12px;">&#128269; Induction</button>
+                                </div>
+                                <div id="inductionLookupResults" style="margin-top:6px;display:none;"></div>
                             </div>
 
                             <div class="form-group">
@@ -620,6 +634,8 @@
                                     </label>
                                 </div>
                                 <div id="legalAgreementBelow" style="margin-top:8px;display:none;">
+                                    <label style="font-size:12px;color:#555;font-weight:600;display:block;margin-bottom:4px;">Sponsor Name</label>
+                                    <input type="text" id="sponsorName" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;margin-bottom:8px;" placeholder="Enter the sponsor company name">
                                     <label style="font-size:12px;color:#555;font-weight:600;display:block;margin-bottom:4px;">Legal Agreement *</label>
                                     <input type="file" id="legalAgreementUpload" accept=".pdf,image/*">
                                     <span class="field-hint">Upload the Legal Agreement document.</span>
@@ -646,6 +662,8 @@
                         <div class="admin-tab"        id="atab-settings"  onclick="switchAdminTab('settings')">System Settings</div>
                         <div class="admin-tab"        id="atab-import"    onclick="switchAdminTab('import')">Import Backlog</div>
                         <div class="admin-tab"        id="atab-nongrata" onclick="switchAdminTab('nongrata')">Non Grata</div>
+                        <div class="admin-tab"        id="atab-induction" onclick="switchAdminTab('induction')">Induction WB</div>
+                        <div class="admin-tab"        id="atab-sysusers"  onclick="switchAdminTab('sysusers')">System Users</div>
                     </div>
 
                     <div id="apane-users" class="admin-pane">
@@ -755,6 +773,36 @@
                         </div>
                         <div id="nonGrataImportResult"></div>
                         <div id="nonGrataListContainer"><p style="color:#888;">Loading...</p></div>
+                    </div>
+
+                    <div id="apane-induction" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Induction Workbench</h3>
+                        <p class="card-subtitle" style="margin-top:0;">Induction records. Fields: full name, gender, nationality, date of birth, gov ID, mobile, blood type, language, company, legal agreement, insurance validity, profession iqama, profession work, location, induction date, status.</p>
+                        <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
+                            <p style="margin:0 0 12px;font-size:14px;color:#555;">
+                                Import from Excel — columns: <code>full_name*</code>, <code>gender</code>, <code>nationality</code>, <code>date_of_birth</code>, <code>gov_id_number</code>, <code>mobile_number</code>, <code>blood_type</code>, <code>language</code>, <code>company</code>, <code>legal_agreement</code>, <code>insurance_validity</code>, <code>profession_iqama</code>, <code>profession_work</code>, <code>location</code>, <code>induction_date</code>, <code>status</code>
+                            </p>
+                            <input type="file" id="inductionImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
+                            <br>
+                            <button class="btn-submit" onclick="importInductionExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                        </div>
+                        <div id="inductionImportResult"></div>
+                        <div id="inductionListContainer"><p style="color:#888;">Loading...</p></div>
+                    </div>
+
+                    <div id="apane-sysusers" class="admin-pane hidden">
+                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">System Users</h3>
+                        <p class="card-subtitle" style="margin-top:0;">System access users. Fields: employee name, gov ID, email, project, company, job title, location, mobile, nationality, role.</p>
+                        <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
+                            <p style="margin:0 0 12px;font-size:14px;color:#555;">
+                                Import from Excel — columns: <code>employee_name*</code>, <code>gov_id_number</code>, <code>email</code>, <code>project</code>, <code>company</code>, <code>job_title</code>, <code>location</code>, <code>mobile_number</code>, <code>nationality</code>, <code>role</code>
+                            </p>
+                            <input type="file" id="sysusersImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
+                            <br>
+                            <button class="btn-submit" onclick="importSystemUsersExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                        </div>
+                        <div id="sysusersImportResult"></div>
+                        <div id="sysusersListContainer"><p style="color:#888;">Loading...</p></div>
                     </div>
                 </div>
             </div>
@@ -1314,6 +1362,7 @@
             fd.append('passport_number',        document.getElementById('passportNo').value.trim() || '');
             fd.append('language',               document.getElementById('language').value || '');
             fd.append('safety_induction_date',  document.getElementById('safetyInductionDate').value || '');
+            fd.append('sponsor_name',           document.getElementById('sponsorName').value.trim() || '');
 
             const sameAsWa = document.getElementById('sameAsWhatsapp').checked;
             const mobile = document.getElementById('mobileNo').value.trim();
@@ -1427,30 +1476,59 @@
             }
         }
 
+        let allApplicationsData = [];
+
+        function filterApplications() {
+            const q = document.getElementById('appSearch').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('appStatusFilter').value.toLowerCase();
+            let filtered = allApplicationsData;
+            if (statusFilter) {
+                filtered = filtered.filter(a => a.workflow_state.toLowerCase() === statusFilter);
+            }
+            if (q) {
+                filtered = filtered.filter(a =>
+                    (a.full_name && a.full_name.toLowerCase().includes(q)) ||
+                    (a.organization && a.organization.toLowerCase().includes(q)) ||
+                    String(a.application_id).includes(q)
+                );
+            }
+            renderAllApplications(filtered);
+        }
+
+        function renderAllApplications(apps) {
+            const tableBody = document.getElementById('allApplicationsTableBody');
+            tableBody.innerHTML = '';
+            if (!apps || apps.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888;">No applications match your filters.</td></tr>`;
+                return;
+            }
+            apps.forEach(app => {
+                const dateString = new Date(app.created_at).toLocaleString();
+                const badgeClass = stateBadgeClass(app.workflow_state);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><a class="app-id-link" onclick="openViewModal(${app.application_id})">#${app.application_id}</a></td>
+                    <td>${dateString}</td>
+                    <td>${escapeHtml(app.full_name)}</td>
+                    <td>${escapeHtml(app.organization)}</td>
+                    <td><span class="badge ${badgeClass}">${escapeHtml(app.workflow_state)}</span></td>
+                    <td><button class="btn-action btn-view" onclick="openViewModal(${app.application_id})">View</button></td>`;
+                tableBody.appendChild(row);
+            });
+        }
+
         async function fetchAllApplications() {
             const tableBody = document.getElementById('allApplicationsTableBody');
             try {
                 const response = await api('/api/v1/applications');
                 if (!response.ok) throw new Error('Backend error');
                 const data = await response.json();
-                tableBody.innerHTML = '';
-                if (!data.applications || data.applications.length === 0) {
+                allApplicationsData = data.applications || [];
+                if (allApplicationsData.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888;">No applications yet.</td></tr>`;
                     return;
                 }
-                data.applications.forEach(app => {
-                    const dateString = new Date(app.created_at).toLocaleString();
-                    const badgeClass = stateBadgeClass(app.workflow_state);
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td><a class="app-id-link" onclick="openViewModal(${app.application_id})">#${app.application_id}</a></td>
-                        <td>${dateString}</td>
-                        <td>${escapeHtml(app.full_name)}</td>
-                        <td>${escapeHtml(app.organization)}</td>
-                        <td><span class="badge ${badgeClass}">${escapeHtml(app.workflow_state)}</span></td>
-                        <td><button class="btn-action btn-view" onclick="openViewModal(${app.application_id})">View</button></td>`;
-                    tableBody.appendChild(row);
-                });
+                renderAllApplications(allApplicationsData);
             } catch (error) {
                 tableBody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Failed to load applications.</td></tr>`;
             }
@@ -1650,7 +1728,8 @@
         async function saveEdits() {
             const fields = ['full_name','job_title','employee_number','organization','subcontractor',
                             'gov_id_type','gov_id_number','blood_type','mobile_number','whatsapp_number','email','reports_to',
-                            'gender','nationality','date_of_birth','passport_number','language','safety_induction_date'];
+                            'gender','nationality','date_of_birth','passport_number','language','safety_induction_date',
+                            'sponsor_name'];
             const payload = {};
             fields.forEach(f => {
                 const el = document.getElementById('edit_' + f);
@@ -1827,6 +1906,7 @@
                     ${detailField('WhatsApp', 'whatsapp_number', a.whatsapp_number)}
                     ${detailField('Email', 'email', a.email)}
                     ${detailField('3rd-Party Sponsor', 'is_third_party_sponsor', a.is_third_party_sponsor, { checkbox: true })}
+                    ${detailField('Sponsor Name', 'sponsor_name', a.sponsor_name)}
                     ${detailField('Submitted By', 'submitter_name', a.submitter_name, { readOnly: true })}
                     ${detailField('Submitted At', 'created_at', a.created_at ? new Date(a.created_at).toLocaleString() : '', { readOnly: true })}
                 </dl>
@@ -1889,7 +1969,7 @@
         // ADMIN PANEL (unchanged from v0.5)
         // ==============================================
         function switchAdminTab(tab) {
-            ['users','roles','groups','external','lookups','settings','import','nongrata'].forEach(t => {
+            ['users','roles','groups','external','lookups','settings','import','nongrata','induction','sysusers'].forEach(t => {
                 const tabEl = document.getElementById('atab-' + t);
                 const paneEl = document.getElementById('apane-' + t);
                 if (tabEl) tabEl.classList.toggle('active', t === tab);
@@ -1897,6 +1977,8 @@
             });
             if (tab === 'lookups') loadLookupTablesList();
             if (tab === 'nongrata') loadNonGrata();
+            if (tab === 'induction') loadInductionWorkbench();
+            if (tab === 'sysusers') loadSystemUsers();
         }
 
         async function importBacklogExcel() {
@@ -1991,6 +2073,227 @@
                     resultDiv.innerHTML = html;
                     fileInput.value = '';
                     loadNonGrata();
+                } else {
+                    resultDiv.innerHTML = `<div class="status-box error-msg">Import failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="status-box error-msg">Connection failed: ${escapeHtml(e.message || e)}</div>`;
+            } finally {
+                btn.disabled = false; btn.textContent = 'Upload & Import';
+            }
+        }
+
+        // ==============================================
+        // INDUCTION WORKBENCH AUTO-FILL
+        // ==============================================
+        let inductionLookupTimer = null;
+
+        function onFullNameChange() {
+            clearTimeout(inductionLookupTimer);
+            inductionLookupTimer = setTimeout(() => {
+                const v = document.getElementById('fullName').value.trim();
+                if (v.length >= 2) lookupInduction();
+            }, 500);
+        }
+
+        async function lookupInduction() {
+            const q = document.getElementById('fullName').value.trim();
+            const container = document.getElementById('inductionLookupResults');
+            if (q.length < 2) { container.style.display = 'none'; return; }
+            container.style.display = 'block';
+            container.innerHTML = '<span style="font-size:12px;color:#888;">Searching...</span>';
+            try {
+                const r = await api('/api/v1/induction-workbench/lookup?q=' + encodeURIComponent(q));
+                if (!r.ok) { container.innerHTML = ''; container.style.display = 'none'; return; }
+                const data = await r.json();
+                const matches = data.matches || [];
+                if (!matches.length) {
+                    container.innerHTML = '<span style="font-size:12px;color:#999;">No Induction Workbench matches found.</span>';
+                    return;
+                }
+                let html = '<div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:13px;max-height:200px;overflow-y:auto;">';
+                matches.forEach(m => {
+                    const info = [m.gov_id_number, m.nationality, m.company].filter(Boolean).join(' · ');
+                    html += `<div class="induction-match" onclick="applyInductionMatch(${m.iw_id})" style="padding:6px 8px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:0.15s;" onmouseover="this.style.background='#f5fff5'" onmouseout="this.style.background=''">
+                        <strong>${escapeHtml(m.full_name)}</strong> <span style="color:#666;">${escapeHtml(info)}</span>
+                    </div>`;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '';
+                container.style.display = 'none';
+            }
+        }
+
+        async function applyInductionMatch(iwId) {
+            const container = document.getElementById('inductionLookupResults');
+            try {
+                const r = await api('/api/v1/induction-workbench/lookup?q=' + iwId);
+                if (!r.ok) return;
+                const data = await r.json();
+                const matches = data.matches || [];
+                const m = matches.find(x => x.iw_id === iwId);
+                if (!m) return;
+                if (m.full_name) document.getElementById('fullName').value = m.full_name;
+                if (m.gender) { const sel = document.getElementById('gender'); if (sel) sel.value = m.gender; }
+                if (m.nationality) { const sel = document.getElementById('nationality'); if (sel) sel.value = m.nationality; }
+                if (m.date_of_birth) {
+                    const dob = typeof m.date_of_birth === 'string' ? m.date_of_birth.slice(0,10) : new Date(m.date_of_birth).toISOString().slice(0,10);
+                    const el = document.getElementById('dateOfBirth'); if (el) el.value = dob;
+                }
+                if (m.gov_id_number) {
+                    document.getElementById('govIdNumber').value = m.gov_id_number;
+                    // Try to auto-set ID type based on the number format
+                    const idNum = m.gov_id_number;
+                    const idTypeEl = document.querySelector('input[name="gov_id_type"]:checked') || document.querySelector('input[name="gov_id_type"][value="Saudi National ID"]');
+                    if (idTypeEl) {
+                        if (/^\d{10}$/.test(idNum) && (idNum.startsWith('1') || idNum.startsWith('2'))) {
+                            idTypeEl.checked = true;
+                        } else if (/^\d{10}$/.test(idNum)) {
+                            document.querySelector('input[name="gov_id_type"][value="Iqama"]').checked = true;
+                        }
+                    }
+                }
+                if (m.mobile_number) document.getElementById('mobileNumber').value = m.mobile_number;
+                if (m.blood_type) { const sel = document.getElementById('bloodType'); if (sel) sel.value = m.blood_type; }
+                if (m.language) document.getElementById('language').value = m.language;
+                if (m.company) {
+                    const orgSel = document.getElementById('organization');
+                    if (orgSel) {
+                        for (let opt of orgSel.options) {
+                            if (opt.text.toLowerCase() === m.company.toLowerCase() || opt.value === m.company) {
+                                orgSel.value = opt.value;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (m.profession_work) document.getElementById('jobTitle').value = m.profession_work;
+                if (m.location) document.getElementById('reportsTo').value = m.location;
+                if (m.induction_date) {
+                    const ind = typeof m.induction_date === 'string' ? m.induction_date.slice(0,10) : new Date(m.induction_date).toISOString().slice(0,10);
+                    const el = document.getElementById('safetyInductionDate'); if (el) el.value = ind;
+                }
+                container.innerHTML = '<span style="font-size:12px;color:#2e7d32;">✔ Auto-filled from Induction Workbench</span>';
+                setTimeout(() => { container.style.display = 'none'; }, 3000);
+            } catch (e) {
+                container.innerHTML = '<span style="font-size:12px;color:#c62828;">Auto-fill failed.</span>';
+            }
+        }
+
+        // ==============================================
+        // INDUCTION WORKBENCH
+        // ==============================================
+        async function loadInductionWorkbench() {
+            const container = document.getElementById('inductionListContainer');
+            try {
+                const r = await api('/api/v1/admin/induction-workbench');
+                if (!r.ok) { container.innerHTML = '<p class="status-box error-msg">Failed to load Induction Workbench list.</p>'; return; }
+                const data = await r.json();
+                const entries = data.entries || [];
+                if (!entries.length) {
+                    container.innerHTML = '<p style="color:#888;">No entries yet. Import an Excel file above.</p>';
+                    return;
+                }
+                let html = '<table class="data-table"><thead><tr><th>#</th><th>Full Name</th><th>Gender</th><th>Nationality</th><th>DOB</th><th>Gov ID</th><th>Mobile</th><th>Company</th><th>Induction Date</th><th>Status</th></tr></thead><tbody>';
+                entries.forEach(e => {
+                    const dob = e.date_of_birth ? new Date(e.date_of_birth).toLocaleDateString() : '-';
+                    const ind = e.induction_date ? new Date(e.induction_date).toLocaleDateString() : '-';
+                    html += `<tr><td>${e.iw_id}</td><td>${escapeHtml(e.full_name)}</td><td>${escapeHtml(e.gender || '-')}</td><td>${escapeHtml(e.nationality || '-')}</td><td>${dob}</td><td>${escapeHtml(e.gov_id_number || '-')}</td><td>${escapeHtml(e.mobile_number || '-')}</td><td>${escapeHtml(e.company || '-')}</td><td>${ind}</td><td>${escapeHtml(e.status || '-')}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<p class="status-box error-msg">Error: ${escapeHtml(e.message)}</p>`;
+            }
+        }
+
+        async function importInductionExcel() {
+            const fileInput = document.getElementById('inductionImportFile');
+            const resultDiv = document.getElementById('inductionImportResult');
+            const file = fileInput.files[0];
+            if (!file) { resultDiv.innerHTML = '<div class="status-box error-msg">Please select an Excel file first.</div>'; return; }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            const btn = document.querySelector('#apane-induction .btn-submit');
+            btn.disabled = true; btn.textContent = 'Importing...';
+            resultDiv.innerHTML = '<div class="status-box" style="color:#888;">Importing...</div>';
+
+            try {
+                const r = await api('/api/v1/admin/induction-workbench/import', { method: 'POST', body: fd, headers: {} });
+                const data = await r.json();
+                if (r.ok) {
+                    let html = `<div class="status-box success-msg">✔ Imported: <strong>${data.imported}</strong>`;
+                    if (data.skipped > 0) html += `, skipped: <strong>${data.skipped}</strong>`;
+                    html += `</div>`;
+                    if (data.errors && data.errors.length) {
+                        html += `<div style="margin-top:12px;background:#fff3f3;padding:12px;border-radius:6px;font-size:13px;"><strong style="color:#c62828;">${data.errors.length} error(s):</strong><ul style="margin:6px 0 0;padding-left:20px;">${data.errors.slice(0,10).map(e => `<li style="color:#555;">${escapeHtml(e)}</li>`).join('')}</ul></div>`;
+                    }
+                    resultDiv.innerHTML = html;
+                    fileInput.value = '';
+                    loadInductionWorkbench();
+                } else {
+                    resultDiv.innerHTML = `<div class="status-box error-msg">Import failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="status-box error-msg">Connection failed: ${escapeHtml(e.message || e)}</div>`;
+            } finally {
+                btn.disabled = false; btn.textContent = 'Upload & Import';
+            }
+        }
+
+        // ==============================================
+        // SYSTEM USERS
+        // ==============================================
+        async function loadSystemUsers() {
+            const container = document.getElementById('sysusersListContainer');
+            try {
+                const r = await api('/api/v1/admin/system-users');
+                if (!r.ok) { container.innerHTML = '<p class="status-box error-msg">Failed to load System Users list.</p>'; return; }
+                const data = await r.json();
+                const entries = data.entries || [];
+                if (!entries.length) {
+                    container.innerHTML = '<p style="color:#888;">No entries yet. Import an Excel file above.</p>';
+                    return;
+                }
+                let html = '<table class="data-table"><thead><tr><th>#</th><th>Employee Name</th><th>Gov ID</th><th>Email</th><th>Project</th><th>Company</th><th>Job Title</th><th>Location</th><th>Mobile</th><th>Nationality</th><th>Role</th></tr></thead><tbody>';
+                entries.forEach(e => {
+                    html += `<tr><td>${e.su_id}</td><td>${escapeHtml(e.employee_name)}</td><td>${escapeHtml(e.gov_id_number || '-')}</td><td>${escapeHtml(e.email || '-')}</td><td>${escapeHtml(e.project || '-')}</td><td>${escapeHtml(e.company || '-')}</td><td>${escapeHtml(e.job_title || '-')}</td><td>${escapeHtml(e.location || '-')}</td><td>${escapeHtml(e.mobile_number || '-')}</td><td>${escapeHtml(e.nationality || '-')}</td><td>${escapeHtml(e.role || '-')}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<p class="status-box error-msg">Error: ${escapeHtml(e.message)}</p>`;
+            }
+        }
+
+        async function importSystemUsersExcel() {
+            const fileInput = document.getElementById('sysusersImportFile');
+            const resultDiv = document.getElementById('sysusersImportResult');
+            const file = fileInput.files[0];
+            if (!file) { resultDiv.innerHTML = '<div class="status-box error-msg">Please select an Excel file first.</div>'; return; }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            const btn = document.querySelector('#apane-sysusers .btn-submit');
+            btn.disabled = true; btn.textContent = 'Importing...';
+            resultDiv.innerHTML = '<div class="status-box" style="color:#888;">Importing...</div>';
+
+            try {
+                const r = await api('/api/v1/admin/system-users/import', { method: 'POST', body: fd, headers: {} });
+                const data = await r.json();
+                if (r.ok) {
+                    let html = `<div class="status-box success-msg">✔ Imported: <strong>${data.imported}</strong>`;
+                    if (data.skipped > 0) html += `, skipped: <strong>${data.skipped}</strong>`;
+                    html += `</div>`;
+                    if (data.errors && data.errors.length) {
+                        html += `<div style="margin-top:12px;background:#fff3f3;padding:12px;border-radius:6px;font-size:13px;"><strong style="color:#c62828;">${data.errors.length} error(s):</strong><ul style="margin:6px 0 0;padding-left:20px;">${data.errors.slice(0,10).map(e => `<li style="color:#555;">${escapeHtml(e)}</li>`).join('')}</ul></div>`;
+                    }
+                    resultDiv.innerHTML = html;
+                    fileInput.value = '';
+                    loadSystemUsers();
                 } else {
                     resultDiv.innerHTML = `<div class="status-box error-msg">Import failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
                 }
@@ -2704,7 +3007,7 @@
                 if (isImage) {
                     bodyEl.innerHTML = `<img src="${dataUrl}" alt="${escapeHtml(filename)}" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:4px;">`;
                 } else if (isPdf) {
-                    bodyEl.innerHTML = `<iframe src="${dataUrl}" style="width:100%;height:70vh;border:none;border-radius:4px;"></iframe>`;
+                    bodyEl.innerHTML = `<iframe src="${downloadUrl}?preview=true" style="width:100%;height:70vh;border:none;border-radius:4px;"></iframe>`;
                 } else {
                     bodyEl.innerHTML = `
                         <div class="download-fallback">
