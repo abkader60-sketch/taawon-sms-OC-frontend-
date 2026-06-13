@@ -1880,7 +1880,11 @@
                 (async () => {
                     try {
                         const r = await api(`/api/v1/applications/${a.application_id}/attachment/${photoAtt.attachment_id}?preview=true`);
-                        if (!r.ok) return;
+                        const container = document.getElementById('photoPreviewContainer');
+                        if (!r.ok) {
+                            if (container) container.innerHTML = '<span style="color:#c62828;font-size:11px;">Photo not available</span>';
+                            return;
+                        }
                         const blob = await r.blob();
                         const dataUrl = await new Promise((res, rej) => {
                             const reader = new FileReader();
@@ -1888,14 +1892,16 @@
                             reader.onerror = rej;
                             reader.readAsDataURL(blob);
                         });
-                        const container = document.getElementById('photoPreviewContainer');
                         if (container) {
                             container.innerHTML = `<a href="javascript:void(0)" onclick="previewAttachment(${a.application_id}, ${photoAtt.attachment_id}, '${escapeHtml(photoAtt.original_filename || 'photo')}', '${photoAtt.mime_type || ''}')">
                                 <img src="${dataUrl}" alt="Photo" style="width:120px;height:150px;object-fit:cover;border-radius:4px;cursor:pointer;">
                             </a>
                             <div style="font-size:10px;color:#888;margin-top:2px;">Click to enlarge</div>`;
                         }
-                    } catch(e) {}
+                    } catch(e) {
+                        const container = document.getElementById('photoPreviewContainer');
+                        if (container) container.innerHTML = '<span style="color:#c62828;font-size:11px;">Photo not available</span>';
+                    }
                 })();
             }
 
