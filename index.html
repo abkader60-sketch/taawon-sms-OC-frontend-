@@ -1625,9 +1625,14 @@
         }
 
         function exportToExcel() {
-            // Use XMLHttpRequest instead of fetch for better binary download support
             const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-            const url = `${API_BASE}/api/v1/applications/export`;
+            const statusFilter = document.getElementById('appStatusFilter')?.value || '';
+            const searchFilter = document.getElementById('appSearch')?.value.trim() || '';
+            const params = new URLSearchParams();
+            if (statusFilter) params.set('status', statusFilter);
+            if (searchFilter) params.set('search', searchFilter);
+            const qs = params.toString();
+            const url = `${API_BASE}/api/v1/applications/export${qs ? '?' + qs : ''}`;
             const xhr = new XMLHttpRequest();
             xhr.open('GET', url, true);
             xhr.withCredentials = true;
