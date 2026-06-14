@@ -301,6 +301,7 @@
         <div class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')">Action Dashboard</div>
         <div class="nav-item" id="nav-id-form" onclick="switchView('id-form')">Site Access ID Form</div>
         <div class="nav-item hidden" id="nav-admin" onclick="switchView('admin')">Admin</div>
+        <div class="nav-item hidden" id="nav-nongrata" onclick="switchView('nongrata')">Non Grata</div>
         <div class="nav-item disabled">Material Gate Pass (Coming Soon)</div>
     </div>
 
@@ -809,6 +810,28 @@
         </div>
     </div>
 
+    <div id="view-nongrata" class="hidden">
+        <div class="main-content">
+            <div class="card">
+                <div class="card-title">
+                    Non Grata List
+                    <div class="card-title-actions"><button class="refresh-btn btn-action btn-view" onclick="switchView('nongrata')">⟳ Refresh</button></div>
+                </div>
+                <div class="card-subtitle">Individuals flagged as non grata. Fields: full name, gender, nationality, ID type, ID number, date of birth.</div>
+                <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
+                    <p style="margin:0 0 12px;font-size:14px;color:#555;">
+                        Import from Excel — columns: <code>full_name*</code>, <code>gender</code>, <code>nationality</code>, <code>gov_id_type</code>, <code>gov_id_number</code>, <code>date_of_birth</code>
+                    </p>
+                    <input type="file" id="nonGrataImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
+                    <br>
+                    <button class="btn-submit" onclick="importNonGrataExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                </div>
+                <div id="nonGrataImportResult"></div>
+                <div id="nonGrataListContainer"><p style="color:#888;">Loading...</p></div>
+            </div>
+        </div>
+    </div>
+
     <div id="modalHost"></div>
 
     <script>
@@ -867,8 +890,8 @@
         }
 
         function switchView(viewName) {
-            ['nav-dashboard', 'nav-id-form', 'nav-admin'].forEach(id => document.getElementById(id).classList.remove('active'));
-            ['view-dashboard', 'view-id-form', 'view-admin'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['nav-dashboard', 'nav-id-form', 'nav-admin', 'nav-nongrata'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+            ['view-dashboard', 'view-id-form', 'view-admin', 'view-nongrata'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
 
             if (viewName === 'dashboard') {
                 document.getElementById('nav-dashboard').classList.add('active');
@@ -889,6 +912,12 @@
                 document.getElementById('pageTitle').innerText = 'Administration';
                 document.getElementById('pageSubtitle').innerText = 'Manage users, roles, permissions, groups, and system settings.';
                 loadAdminAll();
+            } else if (viewName === 'nongrata') {
+                document.getElementById('nav-nongrata').classList.add('active');
+                document.getElementById('view-nongrata').classList.remove('hidden');
+                document.getElementById('pageTitle').innerText = 'Non Grata';
+                document.getElementById('pageSubtitle').innerText = 'Individuals flagged as non grata. Import and manage the list.';
+                loadNonGrata();
             }
         }
 
@@ -1053,6 +1082,7 @@
                 document.getElementById('nav-dashboard').classList.add('hidden');
                 document.getElementById('nav-id-form').classList.remove('hidden');
                 document.getElementById('nav-admin').classList.add('hidden');
+                document.getElementById('nav-nongrata').classList.add('hidden');
             } else {
                 document.body.classList.remove('external-mode');
                 document.getElementById('nav-dashboard').classList.remove('hidden');
@@ -1061,6 +1091,11 @@
                     document.getElementById('nav-admin').classList.remove('hidden');
                 } else {
                     document.getElementById('nav-admin').classList.add('hidden');
+                }
+                if (userCan('manage_system_settings')) {
+                    document.getElementById('nav-nongrata').classList.remove('hidden');
+                } else {
+                    document.getElementById('nav-nongrata').classList.add('hidden');
                 }
             }
 
