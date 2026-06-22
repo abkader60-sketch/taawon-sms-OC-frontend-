@@ -377,7 +377,7 @@
                     get a brief form.
                 </div>
 
-                <form id="idApplicationForm">
+                <form id="idApplicationForm" onsubmit="doSubmitApplication(); return false;">
 
                     <!-- ============== 1. APPLICATION CONTEXT ============== -->
                     <div class="card">
@@ -645,7 +645,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-submit">Submit Application</button>
+                    <button type="button" class="btn-submit" onclick="doSubmitApplication()">Submit Application</button>
                     <div id="formStatusMessage" class="inline-status hidden"></div>
                 </form>
             </div>
@@ -1362,15 +1362,20 @@
             else { target.readOnly = false; }
         }
 
-        document.getElementById('idApplicationForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        async function doSubmitApplication() {
+            const form = document.getElementById('idApplicationForm');
+            const submitBtn = form.querySelector('.btn-submit');
+            const statusDiv = document.getElementById('formStatusMessage');
+
             if (!formVariant) {
                 alert('Please select a Company / Employer first.');
                 return;
             }
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
 
-            const submitBtn = this.querySelector('.btn-submit');
-            const statusDiv = document.getElementById('formStatusMessage');
             statusDiv.className = 'inline-status hidden';
             submitBtn.disabled = true; submitBtn.innerText = "Submitting...";
 
@@ -1428,22 +1433,23 @@
                     statusDiv.innerText = `✔ Success! Application submitted. Tracking ID: #${result.application_id}`;
                     statusDiv.className = "inline-status success-msg";
                     statusDiv.classList.remove('hidden');
-                    this.reset();
-                    applyFormVariant('');   // reset variant state
+                    form.reset();
+                    applyFormVariant('');
                 } else {
-                    const result = await response.json().catch(() => ({ detail: response.statusText }));
-                    statusDiv.innerText = `✗ Error: ${result.detail || 'Unknown error'}`;
+                    let detail = 'Unknown error';
+                    try { const j = await response.json(); detail = j.detail || detail; } catch (e) { detail = response.statusText; }
+                    statusDiv.innerText = `✗ Error: ${detail}`;
                     statusDiv.className = "inline-status error-msg";
                     statusDiv.classList.remove('hidden');
                 }
             } catch (error) {
-                statusDiv.innerText = `✗ Connection failed. Is the FastAPI server running?`;
+                statusDiv.innerText = `✗ Connection failed: ${error.message || error}`;
                 statusDiv.className = "inline-status error-msg";
                 statusDiv.classList.remove('hidden');
             } finally {
                 submitBtn.disabled = false; submitBtn.innerText = "Submit Application";
             }
-        });
+        }
 
         // ==============================================
         // DASHBOARD (unchanged from v0.5)
