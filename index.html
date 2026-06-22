@@ -377,7 +377,7 @@
                     get a brief form.
                 </div>
 
-                <form id="idApplicationForm" novalidate>
+                <form id="idApplicationForm">
 
                     <!-- ============== 1. APPLICATION CONTEXT ============== -->
                     <div class="card">
@@ -1368,11 +1368,10 @@
                 alert('Please select a Company / Employer first.');
                 return;
             }
-            if (!this.checkValidity()) { this.reportValidity(); return; }
 
             const submitBtn = this.querySelector('.btn-submit');
             const statusDiv = document.getElementById('formStatusMessage');
-            statusDiv.classList.add('hidden');
+            statusDiv.className = 'inline-status hidden';
             submitBtn.disabled = true; submitBtn.innerText = "Submitting...";
 
             const fd = new FormData();
@@ -1511,23 +1510,11 @@
             }
         }
 
-        let allApplicationsData = [];
-
         function filterApplications() {
-            const q = document.getElementById('appSearch').value.toLowerCase().trim();
-            const statusFilter = document.getElementById('appStatusFilter').value.toLowerCase();
-            let filtered = allApplicationsData;
-            if (statusFilter) {
-                filtered = filtered.filter(a => a.workflow_state.toLowerCase() === statusFilter);
-            }
-            if (q) {
-                filtered = filtered.filter(a =>
-                    (a.full_name && a.full_name.toLowerCase().includes(q)) ||
-                    (a.organization && a.organization.toLowerCase().includes(q)) ||
-                    String(a.application_id).includes(q)
-                );
-            }
-            renderAllApplications(filtered);
+            const q = document.getElementById('appSearch').value.trim();
+            const statusFilter = document.getElementById('appStatusFilter').value;
+            // Use server-side filtering — pass both search and status as query params
+            fetchFilteredApplications(statusFilter, q);
         }
 
         function renderAllApplications(apps) {
@@ -1552,21 +1539,30 @@
             });
         }
 
-        async function fetchAllApplications() {
+        async function fetchFilteredApplications(status, search) {
             const tableBody = document.getElementById('allApplicationsTableBody');
             try {
-                const response = await api('/api/v1/applications');
+                const params = new URLSearchParams();
+                if (status) params.set('status', status);
+                if (search) params.set('search', search);
+                const qs = params.toString();
+                const url = '/api/v1/applications' + (qs ? '?' + qs : '');
+                const response = await api(url);
                 if (!response.ok) throw new Error('Backend error');
                 const data = await response.json();
-                allApplicationsData = data.applications || [];
-                if (allApplicationsData.length === 0) {
+                const apps = data.applications || [];
+                if (apps.length === 0 && !status && !search) {
                     tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888;">No applications yet.</td></tr>`;
                     return;
                 }
-                renderAllApplications(allApplicationsData);
+                renderAllApplications(apps);
             } catch (error) {
                 tableBody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Failed to load applications.</td></tr>`;
             }
+        }
+
+        async function fetchAllApplications() {
+            await fetchFilteredApplications('', '');
         }
 
         function stateBadgeClass(state) {
