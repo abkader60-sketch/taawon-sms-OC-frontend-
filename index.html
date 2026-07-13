@@ -195,6 +195,17 @@
         .lookup-add-form input { padding: 8px; }
         .lookup-add-form button { padding: 9px 18px; }
 
+        /* Column selector modal */
+        .col-selector-wrap { display: flex; gap: 16px; align-items: stretch; min-height: 300px; }
+        .col-selector-box { flex: 1; display: flex; flex-direction: column; }
+        .col-selector-box label { font-weight: 600; font-size: 13px; color: #555; margin-bottom: 6px; display: block; }
+        .col-selector-box select { flex: 1; border: 1px solid #ddd; border-radius: 4px; padding: 6px; font-size: 13px; min-height: 260px; background: #fff; }
+        .col-selector-box select option { padding: 5px 8px; }
+        .col-selector-box select option:checked { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+        .col-selector-arrows { display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 0 4px; }
+        .col-selector-reorder { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+        .col-selector-reorder button { padding: 4px 12px; font-size: 13px; }
+
         /* ===== v0.8: Auth overlays ===== */
         .auth-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #00733e 0%, #00a651 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .auth-card { background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 420px; padding: 36px 32px; }
@@ -384,13 +395,16 @@
                             <option value="Approved">Approved</option>
                             <option value="Rejected">Rejected</option>
                         </select>
+                        <button class="btn-action btn-view" onclick="openColumnSelector()" style="white-space:nowrap;padding:8px 14px;font-size:13px;">☰ Columns</button>
                     </div>
-                    <table>
-                        <thead>
-                            <tr><th>App ID</th><th>Date Submitted</th><th>Full Name</th><th>Organization</th><th>Status</th><th></th></tr>
-                        </thead>
-                        <tbody id="allApplicationsTableBody"><tr><td colspan="6" style="text-align: center; color: #888;">Loading...</td></tr></tbody>
-                    </table>
+                    <div style="overflow-x: auto; max-width: 100%;">
+                        <table>
+                            <thead>
+                                <tr id="allApplicationsHeaderRow"></tr>
+                            </thead>
+                            <tbody id="allApplicationsTableBody"><tr><td colspan="6" style="text-align: center; color: #888;">Loading...</td></tr></tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -866,6 +880,43 @@
         </div>
     </div>
 
+    <!-- Column Selector Modal -->
+    <div id="columnSelectorModal" class="modal-backdrop" style="display:none;">
+        <div class="modal" style="max-width:720px;">
+            <div class="modal-header">
+                <h2>Select Columns</h2>
+                <button class="modal-close" onclick="cancelColumnSelector()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:13px;color:#666;margin-top:0;">Choose which columns to display in the All Applications table. Use Ctrl+click or Shift+click to multi-select.</p>
+                <div class="col-selector-wrap">
+                    <div class="col-selector-box">
+                        <label for="colNotDisplayed">Do Not Display</label>
+                        <select id="colNotDisplayed" multiple></select>
+                    </div>
+                    <div class="col-selector-arrows">
+                        <button class="btn-action btn-view" onclick="moveToDisplay()" title="Move selected to display">&gt;</button>
+                        <button class="btn-action btn-view" onclick="moveToNotDisplay()" title="Move selected to not display">&lt;</button>
+                        <button class="btn-action btn-view" onclick="moveAllToDisplay()" title="Move all to display">&gt;&gt;</button>
+                        <button class="btn-action btn-view" onclick="moveAllToNotDisplay()" title="Move all to not display">&lt;&lt;</button>
+                    </div>
+                    <div class="col-selector-box">
+                        <label for="colDisplayed">Display in Report</label>
+                        <select id="colDisplayed" multiple></select>
+                        <div class="col-selector-reorder">
+                            <button class="btn-action btn-view" onclick="moveUpInDisplay()">↑ Up</button>
+                            <button class="btn-action btn-view" onclick="moveDownInDisplay()">↓ Down</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="cancelColumnSelector()">Cancel</button>
+                <button class="btn-save btn-action" onclick="applyColumnSelector()">Apply</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modalHost"></div>
 
     <script>
@@ -884,6 +935,42 @@
         let allOrganizations = [];
         let workflowMode = 'security_only';
         let formVariant = '';   // '', 'full', or 'brief'
+
+        // Column selector for All Applications table
+        const ALL_COLUMNS = [
+            { key:'application_id', label:'App ID', default:true, render:(a)=>`<a class="app-id-link" onclick="openViewModal(${a.application_id})">#${a.application_id}</a>` },
+            { key:'created_at', label:'Date Submitted', default:true, render:(a)=>a.created_at?new Date(a.created_at).toLocaleString():'-' },
+            { key:'full_name', label:'Full Name', default:true, render:(a)=>escapeHtml(a.full_name||'') },
+            { key:'organization', label:'Organization', default:true, render:(a)=>escapeHtml(a.organization||'') },
+            { key:'workflow_state', label:'Status', default:true, render:(a)=>`<span class="badge ${stateBadgeClass(a.workflow_state)}">${escapeHtml(a.workflow_state||'')}</span>` },
+            { key:'subcontractor', label:'Subcontractor', render:(a)=>escapeHtml(a.subcontractor||'-') },
+            { key:'gov_id_type', label:'Gov ID Type', render:(a)=>escapeHtml(a.gov_id_type||'-') },
+            { key:'gov_id_number', label:'Gov ID Number', render:(a)=>escapeHtml(a.gov_id_number||'-') },
+            { key:'nationality', label:'Nationality', render:(a)=>escapeHtml(a.nationality||'-') },
+            { key:'mobile_number', label:'Mobile', render:(a)=>escapeHtml(a.mobile_number||'-') },
+            { key:'email', label:'Email', render:(a)=>escapeHtml(a.email||'-') },
+            { key:'employee_number', label:'Employee #', render:(a)=>escapeHtml(a.employee_number||'-') },
+            { key:'gender', label:'Gender', render:(a)=>escapeHtml(a.gender||'-') },
+            { key:'date_of_birth', label:'Date of Birth', render:(a)=>a.date_of_birth?new Date(a.date_of_birth).toLocaleDateString():'-' },
+            { key:'blood_type', label:'Blood Type', render:(a)=>escapeHtml(a.blood_type||'-') },
+            { key:'language', label:'Language', render:(a)=>escapeHtml(a.language||'-') },
+            { key:'job_title', label:'Job / Trade', render:(a)=>escapeHtml(a.job_title||'-') },
+            { key:'whatsapp_number', label:'WhatsApp', render:(a)=>escapeHtml(a.whatsapp_number||'-') },
+            { key:'passport_number', label:'Passport Number', render:(a)=>escapeHtml(a.passport_number||'-') },
+            { key:'iqama_expiry_date', label:'Iqama Expiry', render:(a)=>a.iqama_expiry_date?new Date(a.iqama_expiry_date).toLocaleDateString():'-' },
+            { key:'passport_expiry_date', label:'Passport Expiry', render:(a)=>a.passport_expiry_date?new Date(a.passport_expiry_date).toLocaleDateString():'-' },
+            { key:'insurance_expiry_date', label:'Insurance Expiry', render:(a)=>a.insurance_expiry_date?new Date(a.insurance_expiry_date).toLocaleDateString():'-' },
+            { key:'date_joined', label:'Date Joined', render:(a)=>a.date_joined?new Date(a.date_joined).toLocaleDateString():'-' },
+            { key:'reports_to', label:'Reports To', render:(a)=>escapeHtml(a.reports_to||'-') },
+            { key:'is_third_party_sponsor', label:'3rd-Party Sponsor', render:(a)=>a.is_third_party_sponsor?'Yes':'No' },
+            { key:'sponsor_name', label:'Sponsor Name', render:(a)=>escapeHtml(a.sponsor_name||'-') },
+            { key:'legal_agreement_expiry_date', label:'Legal Agreement Expiry', render:(a)=>a.legal_agreement_expiry_date?new Date(a.legal_agreement_expiry_date).toLocaleDateString():'-' },
+            { key:'safety_induction_date', label:'Safety Induction Date', render:(a)=>a.safety_induction_date?new Date(a.safety_induction_date).toLocaleDateString():'-' },
+            { key:'workflow_type', label:'Workflow Type', render:(a)=>escapeHtml(a.workflow_type||'-') },
+            { key:'form_variant', label:'Form Variant', render:(a)=>escapeHtml(a.form_variant||'-') },
+            { key:'submitter_name', label:'Submitted By', render:(a)=>escapeHtml(a.submitter_name||'-') },
+        ];
+        let displayedColumns = ALL_COLUMNS.filter(c=>c.default).map(c=>c.key);
 
         // Country list — alphabetical, with Saudi Arabia first as a sensible default
         const COUNTRY_LIST = [
@@ -1179,6 +1266,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             populateCountryDropdown();
             applyFormVariant('');
+            renderAllApplicationsHeaders();
             // Show login immediately to avoid blank screen while auth check is in flight
             showStaffLogin();
             const me = await loadCurrentUser();
@@ -1492,6 +1580,7 @@
         // ==============================================
         async function fetchAllData() {
             await loadWorkflowMode();
+            renderAllApplicationsHeaders();
             fetchPendingApplications();
             fetchAllApplications();
             fetchHistory();
@@ -1577,30 +1666,43 @@
             } catch (e) { /* stats silently fail */ }
         }
 
+        function renderAllApplicationsHeaders() {
+            const row = document.getElementById('allApplicationsHeaderRow');
+            if (!row) return;
+            let html = '';
+            displayedColumns.forEach(key => {
+                const col = ALL_COLUMNS.find(c => c.key === key);
+                html += `<th>${col ? escapeHtml(col.label) : escapeHtml(key)}</th>`;
+            });
+            html += '<th></th>';
+            row.innerHTML = html;
+        }
+
         function renderAllApplications(apps) {
             const tableBody = document.getElementById('allApplicationsTableBody');
+            const colCount = displayedColumns.length + 1;
             tableBody.innerHTML = '';
             if (!apps || apps.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888;">No applications match your filters.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="${colCount}" style="text-align: center; color: #888;">No applications match your filters.</td></tr>`;
                 return;
             }
             apps.forEach(app => {
-                const dateString = new Date(app.created_at).toLocaleString();
-                const badgeClass = stateBadgeClass(app.workflow_state);
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><a class="app-id-link" onclick="openViewModal(${app.application_id})">#${app.application_id}</a></td>
-                    <td>${dateString}</td>
-                    <td>${escapeHtml(app.full_name)}</td>
-                    <td>${escapeHtml(app.organization)}</td>
-                    <td><span class="badge ${badgeClass}">${escapeHtml(app.workflow_state)}</span></td>
-                    <td><button class="btn-action btn-view" onclick="openViewModal(${app.application_id})">View</button></td>`;
+                let html = '';
+                displayedColumns.forEach(key => {
+                    const col = ALL_COLUMNS.find(c => c.key === key);
+                    if (col) { html += `<td>${col.render(app)}</td>`; }
+                    else { html += `<td>${escapeHtml(app[key]!=null?String(app[key]):'-')}</td>`; }
+                });
+                html += `<td><button class="btn-action btn-view" onclick="openViewModal(${app.application_id})">View</button></td>`;
+                row.innerHTML = html;
                 tableBody.appendChild(row);
             });
         }
 
         async function fetchFilteredApplications(status, search) {
             const tableBody = document.getElementById('allApplicationsTableBody');
+            const colCount = displayedColumns.length + 1;
             try {
                 const params = new URLSearchParams();
                 if (status) params.set('status', status);
@@ -1612,12 +1714,12 @@
                 const data = await response.json();
                 const apps = data.applications || [];
                 if (apps.length === 0 && !status && !search) {
-                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888;">No applications yet.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="${colCount}" style="text-align: center; color: #888;">No applications yet.</td></tr>`;
                     return;
                 }
                 renderAllApplications(apps);
             } catch (error) {
-                tableBody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Failed to load applications.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="${colCount}" style="color:red; text-align:center;">Failed to load applications.</td></tr>`;
             }
         }
 
@@ -3175,6 +3277,98 @@
                 if (!r.ok) { const e = await r.json().catch(() => ({})); alert(`Delete failed: ${e.detail || r.statusText}`); return; }
                 await refreshViewModalContent();
             } catch (e) { alert(`Delete error: ${e.message}`); }
+        }
+
+        // ==============================================
+        // COLUMN SELECTOR
+        // ==============================================
+        let columnSelectorWorkingCopy = [];
+
+        function openColumnSelector() {
+            columnSelectorWorkingCopy = [...displayedColumns];
+            renderColumnSelectorLists();
+            document.getElementById('columnSelectorModal').style.display = 'flex';
+        }
+
+        function renderColumnSelectorLists() {
+            const notDisplayed = document.getElementById('colNotDisplayed');
+            const displayed = document.getElementById('colDisplayed');
+            displayed.innerHTML = '';
+            notDisplayed.innerHTML = '';
+            columnSelectorWorkingCopy.forEach(key => {
+                const col = ALL_COLUMNS.find(c => c.key === key);
+                if (col) { const o = document.createElement('option'); o.value = col.key; o.textContent = col.label; displayed.appendChild(o); }
+            });
+            ALL_COLUMNS.filter(c => !columnSelectorWorkingCopy.includes(c.key)).forEach(col => {
+                const o = document.createElement('option'); o.value = col.key; o.textContent = col.label; notDisplayed.appendChild(o);
+            });
+        }
+
+        function getSelectedOptionValues(selectEl) {
+            return Array.from(selectEl.selectedOptions).map(o => o.value);
+        }
+
+        function moveToDisplay() {
+            const sel = getSelectedOptionValues(document.getElementById('colNotDisplayed'));
+            if (!sel.length) return;
+            columnSelectorWorkingCopy = columnSelectorWorkingCopy.concat(sel);
+            renderColumnSelectorLists();
+        }
+
+        function moveToNotDisplay() {
+            const sel = getSelectedOptionValues(document.getElementById('colDisplayed'));
+            if (!sel.length) return;
+            columnSelectorWorkingCopy = columnSelectorWorkingCopy.filter(k => !sel.includes(k));
+            renderColumnSelectorLists();
+        }
+
+        function moveAllToDisplay() {
+            columnSelectorWorkingCopy = ALL_COLUMNS.map(c => c.key);
+            renderColumnSelectorLists();
+        }
+
+        function moveAllToNotDisplay() {
+            columnSelectorWorkingCopy = [];
+            renderColumnSelectorLists();
+        }
+
+        function moveUpInDisplay() {
+            const displayed = document.getElementById('colDisplayed');
+            if (displayed.selectedOptions.length !== 1) return;
+            const key = displayed.selectedOptions[0].value;
+            const idx = columnSelectorWorkingCopy.indexOf(key);
+            if (idx > 0) {
+                [columnSelectorWorkingCopy[idx-1], columnSelectorWorkingCopy[idx]] = [columnSelectorWorkingCopy[idx], columnSelectorWorkingCopy[idx-1]];
+                renderColumnSelectorLists();
+                const opts = displayed.options;
+                for (let i = 0; i < opts.length; i++) { if (opts[i].value === key) { opts[i].selected = true; break; } }
+            }
+        }
+
+        function moveDownInDisplay() {
+            const displayed = document.getElementById('colDisplayed');
+            if (displayed.selectedOptions.length !== 1) return;
+            const key = displayed.selectedOptions[0].value;
+            const idx = columnSelectorWorkingCopy.indexOf(key);
+            if (idx < columnSelectorWorkingCopy.length - 1) {
+                [columnSelectorWorkingCopy[idx], columnSelectorWorkingCopy[idx+1]] = [columnSelectorWorkingCopy[idx+1], columnSelectorWorkingCopy[idx]];
+                renderColumnSelectorLists();
+                const opts = displayed.options;
+                for (let i = 0; i < opts.length; i++) { if (opts[i].value === key) { opts[i].selected = true; break; } }
+            }
+        }
+
+        function cancelColumnSelector() {
+            columnSelectorWorkingCopy = [];
+            document.getElementById('columnSelectorModal').style.display = 'none';
+        }
+
+        function applyColumnSelector() {
+            displayedColumns = [...columnSelectorWorkingCopy];
+            columnSelectorWorkingCopy = [];
+            document.getElementById('columnSelectorModal').style.display = 'none';
+            renderAllApplicationsHeaders();
+            fetchAllApplications();
         }
 
         function escapeHtml(s) {
