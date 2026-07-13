@@ -706,13 +706,12 @@
                         <div class="admin-tab active" id="atab-users"     onclick="switchAdminTab('users')">Internal Users</div>
                         <div class="admin-tab"        id="atab-roles"     onclick="switchAdminTab('roles')">Roles &amp; Permissions</div>
                         <div class="admin-tab"        id="atab-groups"    onclick="switchAdminTab('groups')">Groups</div>
-                        <div class="admin-tab"        id="atab-external"  onclick="switchAdminTab('external')">External Submitters</div>
+                        <div class="admin-tab"        id="atab-usermgmt"  onclick="switchAdminTab('usermgmt')">User Management</div>
                         <div class="admin-tab"        id="atab-lookups"   onclick="switchAdminTab('lookups')">Lookup Tables</div>
                         <div class="admin-tab"        id="atab-settings"  onclick="switchAdminTab('settings')">System Settings</div>
                         <div class="admin-tab"        id="atab-import"    onclick="switchAdminTab('import')">Import Backlog</div>
                         <div class="admin-tab"        id="atab-nongrata" onclick="switchAdminTab('nongrata')">Non Grata</div>
                         <div class="admin-tab"        id="atab-induction" onclick="switchAdminTab('induction')">Induction WB</div>
-                        <div class="admin-tab"        id="atab-sysusers"  onclick="switchAdminTab('sysusers')">System Users</div>
                     </div>
 
                     <div id="apane-users" class="admin-pane">
@@ -722,13 +721,15 @@
                             <thead><tr><th>ID</th><th>Full Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
                             <tbody id="adminUsersTableBody"><tr><td colspan="6" style="text-align:center;color:#888;">Loading...</td></tr></tbody>
                         </table>
-                        <h3 style="margin-top:30px;color:#1a1c23;font-size:16px;">Add a New Internal User</h3>
-                        <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;">
-                            <div><label>Full name</label><input type="text" id="newUserFullName"></div>
-                            <div><label>Username</label><input type="text" id="newUserUsername"></div>
-                            <div><label>Role</label><select id="newUserRoleId"></select></div>
-                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createUser()">Add User</button></div>
-                        </div>
+                        <details style="margin-top:20px;">
+                            <summary style="cursor:pointer;font-weight:600;color:#00a651;font-size:14px;padding:8px 0;">+ Add a new internal user</summary>
+                            <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;margin-top:10px;">
+                                <div><label>Full name</label><input type="text" id="newUserFullName"></div>
+                                <div><label>Username</label><input type="text" id="newUserUsername"></div>
+                                <div><label>Role</label><select id="newUserRoleId"></select></div>
+                                <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createUser()">Add User</button></div>
+                            </div>
+                        </details>
                     </div>
 
                     <div id="apane-roles" class="admin-pane hidden">
@@ -756,17 +757,59 @@
                         </div>
                     </div>
 
-                    <div id="apane-external" class="admin-pane hidden">
-                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">External Submitter Accounts</h3>
-                        <p class="card-subtitle" style="margin-top:0;">External submitters from Client / PMC / Main Contractor / LDCs / Subcontractors. The login portal is being prepared. For now, this section creates the account and emails the credentials.</p>
-                        <div id="adminExternalContainer"><p style="color:#888;">Loading...</p></div>
-                        <h3 style="margin-top:30px;color:#1a1c23;font-size:16px;">Create a New External Submitter</h3>
-                        <p class="field-hint">A 12-character random password is generated and emailed.</p>
-                        <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1.2fr auto;">
-                            <div><label>Full name</label><input type="text" id="newExtFullName"></div>
-                            <div><label>Email</label><input type="email" id="newExtEmail"></div>
-                            <div><label>Organization</label><select id="newExtOrgId"></select></div>
-                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createExternalSubmitter()">Create Account</button></div>
+                    <div id="apane-usermgmt" class="admin-pane hidden">
+                        <div class="admin-tabs" style="margin-bottom:16px;">
+                            <div class="admin-tab active" id="us-tab-external" onclick="switchUserMgmtSubTab('external')">External Submitters</div>
+                            <div class="admin-tab"        id="us-tab-sysusers" onclick="switchUserMgmtSubTab('sysusers')">System Users</div>
+                        </div>
+
+                        <div id="us-section-external">
+                            <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">External Submitter Accounts</h3>
+                            <p class="card-subtitle" style="margin-top:0;">External submitters from Client / PMC / Main Contractor / LDCs / Subcontractors. The login portal is being prepared. For now, this section creates the account and emails the credentials.</p>
+                            <div id="adminExternalContainer"><p style="color:#888;">Loading...</p></div>
+                            <h3 style="margin-top:30px;color:#1a1c23;font-size:16px;">Create a New External Submitter</h3>
+                            <p class="field-hint">A 12-character random password is generated and emailed.</p>
+                            <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1.2fr auto;">
+                                <div><label>Full name</label><input type="text" id="newExtFullName"></div>
+                                <div><label>Email</label><input type="email" id="newExtEmail"></div>
+                                <div><label>Organization</label><select id="newExtOrgId"></select></div>
+                                <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createExternalSubmitter()">Create Account</button></div>
+                            </div>
+                        </div>
+
+                        <div id="us-section-sysusers" class="hidden">
+                            <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">System Users</h3>
+                            <p class="card-subtitle" style="margin-top:0;">System access users. Fields: employee name, gov ID, email, project, company, job title, location, mobile, nationality, role.</p>
+                            <!-- Single create form -->
+                            <div style="background:#f9f9f9;border:1px solid #ddd;border-radius:6px;padding:20px;margin-bottom:20px;">
+                                <h4 style="margin:0 0 12px;color:#1a1c23;font-size:15px;">Create Single System User</h4>
+                                <p class="field-hint" style="margin:0 0 14px;">Manually create one system user by filling out the fields below.</p>
+                                <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                                    <div class="form-group"><label>Employee Name *</label><input type="text" id="newSysName"></div>
+                                    <div class="form-group"><label>Nationality</label><input type="text" id="newSysNationality"></div>
+                                    <div class="form-group"><label>Gov ID Number</label><input type="text" id="newSysGovId"></div>
+                                    <div class="form-group"><label>Mobile Number</label><input type="tel" id="newSysMobile"></div>
+                                    <div class="form-group"><label>Email</label><input type="email" id="newSysEmail"></div>
+                                    <div class="form-group"><label>Job Title</label><input type="text" id="newSysJobTitle"></div>
+                                    <div class="form-group"><label>Project</label><input type="text" id="newSysProject"></div>
+                                    <div class="form-group"><label>Location</label><input type="text" id="newSysLocation"></div>
+                                    <div class="form-group"><label>Company</label><input type="text" id="newSysCompany"></div>
+                                    <div class="form-group"><label>Role</label><input type="text" id="newSysRole"></div>
+                                </div>
+                                <button id="createSysUserBtn" class="btn-submit" style="margin-top:16px;width:auto;padding:12px 28px;" onclick="createSingleSystemUser()">Create System User</button>
+                                <div id="createSysUserResult" style="margin-top:12px;"></div>
+                            </div>
+                            <!-- Bulk import -->
+                            <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
+                                <p style="margin:0 0 12px;font-size:14px;color:#555;">
+                                    Or import from Excel — columns: <code>employee_name*</code>, <code>gov_id_number</code>, <code>email</code>, <code>project</code>, <code>company</code>, <code>job_title</code>, <code>location</code>, <code>mobile_number</code>, <code>nationality</code>, <code>role</code>
+                                </p>
+                                <input type="file" id="sysusersImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
+                                <br>
+                                <button id="sysusersImportBtn" class="btn-submit" onclick="importSystemUsersExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                            </div>
+                            <div id="sysusersImportResult"></div>
+                            <div id="sysusersListContainer"><p style="color:#888;">Loading...</p></div>
                         </div>
                     </div>
 
@@ -839,20 +882,6 @@
                         <div id="inductionListContainer"><p style="color:#888;">Loading...</p></div>
                     </div>
 
-                    <div id="apane-sysusers" class="admin-pane hidden">
-                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">System Users</h3>
-                        <p class="card-subtitle" style="margin-top:0;">System access users. Fields: employee name, gov ID, email, project, company, job title, location, mobile, nationality, role.</p>
-                        <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
-                            <p style="margin:0 0 12px;font-size:14px;color:#555;">
-                                Import from Excel — columns: <code>employee_name*</code>, <code>gov_id_number</code>, <code>email</code>, <code>project</code>, <code>company</code>, <code>job_title</code>, <code>location</code>, <code>mobile_number</code>, <code>nationality</code>, <code>role</code>
-                            </p>
-                            <input type="file" id="sysusersImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
-                            <br>
-                            <button class="btn-submit" onclick="importSystemUsersExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
-                        </div>
-                        <div id="sysusersImportResult"></div>
-                        <div id="sysusersListContainer"><p style="color:#888;">Loading...</p></div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -2197,7 +2226,7 @@
         // ADMIN PANEL (unchanged from v0.5)
         // ==============================================
         function switchAdminTab(tab) {
-            ['users','roles','groups','external','lookups','settings','import','nongrata','induction','sysusers'].forEach(t => {
+            ['users','roles','groups','usermgmt','lookups','settings','import','nongrata','induction'].forEach(t => {
                 const tabEl = document.getElementById('atab-' + t);
                 const paneEl = document.getElementById('apane-' + t);
                 if (tabEl) tabEl.classList.toggle('active', t === tab);
@@ -2206,6 +2235,16 @@
             if (tab === 'lookups') loadLookupTablesList();
             if (tab === 'nongrata') loadNonGrata();
             if (tab === 'induction') loadInductionWorkbench();
+            if (tab === 'usermgmt') { switchUserMgmtSubTab('external'); loadAdminExternal(); }
+        }
+
+        function switchUserMgmtSubTab(tab) {
+            ['external','sysusers'].forEach(t => {
+                const tabEl = document.getElementById('us-tab-' + t);
+                const secEl = document.getElementById('us-section-' + t);
+                if (tabEl) tabEl.classList.toggle('active', t === tab);
+                if (secEl) secEl.classList.toggle('hidden', t !== tab);
+            });
             if (tab === 'sysusers') loadSystemUsers();
         }
 
@@ -2498,6 +2537,48 @@
             }
         }
 
+        async function createSingleSystemUser() {
+            const name = document.getElementById('newSysName').value.trim();
+            const resultDiv = document.getElementById('createSysUserResult');
+            if (!name) { resultDiv.innerHTML = '<div class="status-box error-msg">Employee name is required.</div>'; return; }
+            const payload = {
+                employee_name: name,
+                gov_id_number: document.getElementById('newSysGovId').value.trim() || null,
+                email: document.getElementById('newSysEmail').value.trim() || null,
+                project: document.getElementById('newSysProject').value.trim() || null,
+                company: document.getElementById('newSysCompany').value.trim() || null,
+                job_title: document.getElementById('newSysJobTitle').value.trim() || null,
+                location: document.getElementById('newSysLocation').value.trim() || null,
+                mobile_number: document.getElementById('newSysMobile').value.trim() || null,
+                nationality: document.getElementById('newSysNationality').value.trim() || null,
+                role: document.getElementById('newSysRole').value.trim() || null,
+            };
+            const btn = document.getElementById('createSysUserBtn');
+            btn.disabled = true; btn.textContent = 'Creating...';
+            resultDiv.innerHTML = '<div class="status-box" style="color:#888;">Creating...</div>';
+            try {
+                const r = await api('/api/v1/admin/system-users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await r.json();
+                if (r.ok) {
+                    resultDiv.innerHTML = `<div class="status-box success-msg">✔ Created: <strong>${escapeHtml(name)}</strong></div>`;
+                    ['newSysName','newSysGovId','newSysEmail','newSysProject','newSysCompany',
+                     'newSysJobTitle','newSysLocation','newSysMobile','newSysNationality','newSysRole'
+                    ].forEach(id => document.getElementById(id).value = '');
+                    loadSystemUsers();
+                } else {
+                    resultDiv.innerHTML = `<div class="status-box error-msg">Failed: ${escapeHtml(data.detail || r.statusText)}</div>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="status-box error-msg">Connection failed: ${escapeHtml(e.message || e)}</div>`;
+            } finally {
+                btn.disabled = false; btn.textContent = 'Create System User';
+            }
+        }
+
         async function importSystemUsersExcel() {
             const fileInput = document.getElementById('sysusersImportFile');
             const resultDiv = document.getElementById('sysusersImportResult');
@@ -2506,7 +2587,7 @@
 
             const fd = new FormData();
             fd.append('file', file);
-            const btn = document.querySelector('#apane-sysusers .btn-submit');
+            const btn = document.getElementById('sysusersImportBtn');
             btn.disabled = true; btn.textContent = 'Importing...';
             resultDiv.innerHTML = '<div class="status-box" style="color:#888;">Importing...</div>';
 
