@@ -671,6 +671,9 @@
                                     <label style="font-size:12px;color:#555;font-weight:600;display:block;margin-bottom:4px;">Legal Agreement *</label>
                                     <input type="file" id="legalAgreementUpload" accept=".pdf,image/*">
                                     <span class="field-hint">Upload the Legal Agreement document.</span>
+                                    <label style="font-size:12px;color:#555;font-weight:600;display:block;margin-top:10px;margin-bottom:4px;">Legal Agreement Expiry Date *</label>
+                                    <input type="date" id="legalAgreementExpiry" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;">
+                                    <span class="field-hint">Required when a Legal Agreement is uploaded.</span>
                                 </div>
                             </div>
                         </div>
@@ -1353,7 +1356,7 @@
             document.querySelectorAll(selector).forEach(el => {
                 const inputs = el.querySelectorAll('input, select');
                 inputs.forEach(inp => {
-                    if (inp.id === 'whatsappNo' || inp.id === 'legalAgreementUpload') return;
+                    if (inp.id === 'whatsappNo' || inp.id === 'legalAgreementUpload' || inp.id === 'legalAgreementExpiry') return;
                     if (inp.type === 'checkbox') return;
                     inp.required = required;
                 });
@@ -1373,8 +1376,9 @@
             const isThirdParty = document.getElementById('sponsorIsThirdParty').checked;
             const below = document.getElementById('legalAgreementBelow');
             const upload  = document.getElementById('legalAgreementUpload');
-            if (isThirdParty) { below.style.display = 'block'; upload.required = true; }
-            else { below.style.display = 'none'; upload.required = false; upload.value = ""; }
+            const expiry = document.getElementById('legalAgreementExpiry');
+            if (isThirdParty) { below.style.display = 'block'; upload.required = true; expiry.required = true; }
+            else { below.style.display = 'none'; upload.required = false; upload.value = ""; expiry.required = false; expiry.value = ""; }
         }
 
         function handleWhatsAppChange() {
@@ -1433,6 +1437,7 @@
             fd.append('language',               document.getElementById('language').value || '');
             fd.append('safety_induction_date',  document.getElementById('safetyInductionDate').value || '');
             fd.append('sponsor_name',           document.getElementById('sponsorName').value.trim() || '');
+            fd.append('legal_agreement_expiry_date', document.getElementById('legalAgreementExpiry').value || '');
 
             const sameAsWa = document.getElementById('sameAsWhatsapp').checked;
             const mobile = document.getElementById('mobileNo').value.trim();
@@ -1853,7 +1858,7 @@
             if (sponsorEl) payload.is_third_party_sponsor = sponsorEl.checked;
 
             // Date fields that need special handling
-            const dateFields = ['date_joined', 'iqama_expiry_date', 'passport_expiry_date', 'insurance_expiry_date', 'date_of_birth', 'safety_induction_date'];
+            const dateFields = ['date_joined', 'iqama_expiry_date', 'passport_expiry_date', 'insurance_expiry_date', 'date_of_birth', 'safety_induction_date', 'legal_agreement_expiry_date'];
             dateFields.forEach(f => {
                 const el = document.getElementById('edit_' + f);
                 if (el) payload[f] = el.value || null;
@@ -2027,6 +2032,7 @@
                     ${detailField('Email', 'email', a.email)}
                     ${detailField('3rd-Party Sponsor', 'is_third_party_sponsor', a.is_third_party_sponsor, { checkbox: true })}
                     ${detailField('Sponsor Name', 'sponsor_name', a.sponsor_name)}
+                    ${detailField('Legal Agreement Expiry', 'legal_agreement_expiry_date', a.legal_agreement_expiry_date, { date: true })}
                     ${detailField('Submitted By', 'submitter_name', a.submitter_name, { readOnly: true })}
                     ${detailField('Submitted At', 'created_at', a.created_at ? new Date(a.created_at).toLocaleString() : '', { readOnly: true })}
                 </dl>
