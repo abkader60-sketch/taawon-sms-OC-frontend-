@@ -49,6 +49,19 @@
         .field-hint { font-size: 11px; color: #888; margin-top: 4px; font-style: italic; }
         .inline-status { padding: 12px 14px; border-radius: 4px; margin: 10px 0 0 0; font-weight: 600; text-align: center; }
 
+        .stat-cards { display: flex; gap: 16px; margin-bottom: 20px; }
+        .stat-card { flex: 1; background: #fff; border-radius: 10px; padding: 18px 20px; border-left: 5px solid #ccc; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+        .stat-card .stat-number { font-size: 32px; font-weight: 700; line-height: 1.1; margin: 0 0 4px 0; }
+        .stat-card .stat-label { font-size: 13px; color: #666; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; margin: 0; }
+        .stat-card.stat-total   { border-left-color: #1a1c23; }
+        .stat-card.stat-total .stat-number { color: #1a1c23; }
+        .stat-card.stat-pending { border-left-color: #e65100; }
+        .stat-card.stat-pending .stat-number { color: #e65100; }
+        .stat-card.stat-approved { border-left-color: #2e7d32; }
+        .stat-card.stat-approved .stat-number { color: #2e7d32; }
+        .stat-card.stat-rejected { border-left-color: #c62828; }
+        .stat-card.stat-rejected .stat-number { color: #c62828; }
+
         /* Variant info banner */
         .variant-banner { padding: 12px 14px; border-radius: 4px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
         .variant-banner.brief { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
@@ -342,6 +355,24 @@
                     <div class="card-title">
                         All Applications
                         <div class="card-title-actions"><button class="refresh-btn btn-export" onclick="exportToExcel()">⤓ Export to Excel</button></div>
+                    </div>
+                    <div class="stat-cards">
+                        <div class="stat-card stat-total">
+                            <p class="stat-number" id="statTotal">0</p>
+                            <p class="stat-label">Total Applications</p>
+                        </div>
+                        <div class="stat-card stat-pending">
+                            <p class="stat-number" id="statPending">0</p>
+                            <p class="stat-label">Pending</p>
+                        </div>
+                        <div class="stat-card stat-approved">
+                            <p class="stat-number" id="statApproved">0</p>
+                            <p class="stat-label">Approved</p>
+                        </div>
+                        <div class="stat-card stat-rejected">
+                            <p class="stat-number" id="statRejected">0</p>
+                            <p class="stat-label">Rejected</p>
+                        </div>
                     </div>
                     <div class="card-subtitle">Includes approved, rejected, and pending. Click any App ID or View button to see full details.</div>
                     <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
@@ -1459,6 +1490,7 @@
             fetchPendingApplications();
             fetchAllApplications();
             fetchHistory();
+            updateStatCards();
         }
 
         async function fetchPendingApplications() {
@@ -1521,6 +1553,23 @@
             const statusFilter = document.getElementById('appStatusFilter').value;
             // Use server-side filtering — pass both search and status as query params
             fetchFilteredApplications(statusFilter, q);
+        }
+
+        async function updateStatCards() {
+            try {
+                const r = await api('/api/v1/applications');
+                if (!r.ok) return;
+                const data = await r.json();
+                const list = data.applications || [];
+                const total = list.length;
+                const pending = list.filter(a => a.workflow_state !== 'Approved' && a.workflow_state !== 'Rejected').length;
+                const approved = list.filter(a => a.workflow_state === 'Approved').length;
+                const rejected = list.filter(a => a.workflow_state === 'Rejected').length;
+                document.getElementById('statTotal').textContent = total;
+                document.getElementById('statPending').textContent = pending;
+                document.getElementById('statApproved').textContent = approved;
+                document.getElementById('statRejected').textContent = rejected;
+            } catch (e) { /* stats silently fail */ }
         }
 
         function renderAllApplications(apps) {
@@ -2082,6 +2131,7 @@
                     // Refresh dashboard lists
                     fetchAllApplications();
                     fetchPendingApplications();
+                    updateStatCards();
                 } else {
                     resultDiv.innerHTML = `<div class="status-box error-msg">Import failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
                 }
