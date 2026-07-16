@@ -710,7 +710,6 @@
                         <div class="admin-tab"        id="atab-lookups"   onclick="switchAdminTab('lookups')">Lookup Tables</div>
                         <div class="admin-tab"        id="atab-settings"  onclick="switchAdminTab('settings')">System Settings</div>
                         <div class="admin-tab"        id="atab-import"    onclick="switchAdminTab('import')">Import Backlog</div>
-                        <div class="admin-tab"        id="atab-nongrata" onclick="switchAdminTab('nongrata')">Non Grata</div>
                         <div class="admin-tab"        id="atab-induction" onclick="switchAdminTab('induction')">Induction WB</div>
                     </div>
 
@@ -721,15 +720,12 @@
                             <thead><tr><th>ID</th><th>Full Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
                             <tbody id="adminUsersTableBody"><tr><td colspan="6" style="text-align:center;color:#888;">Loading...</td></tr></tbody>
                         </table>
-                        <details style="margin-top:20px;">
-                            <summary style="cursor:pointer;font-weight:600;color:#00a651;font-size:14px;padding:8px 0;">+ Add a new internal user</summary>
-                            <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;margin-top:10px;">
-                                <div><label>Full name</label><input type="text" id="newUserFullName"></div>
-                                <div><label>Username</label><input type="text" id="newUserUsername"></div>
-                                <div><label>Role</label><select id="newUserRoleId"></select></div>
-                                <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createUser()">Add User</button></div>
-                            </div>
-                        </details>
+                        <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;margin-top:20px;">
+                            <div><label>Full name</label><input type="text" id="newUserFullName"></div>
+                            <div><label>Username</label><input type="text" id="newUserUsername"></div>
+                            <div><label>Role</label><select id="newUserRoleId"></select></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createUser()">Add User</button></div>
+                        </div>
                     </div>
 
                     <div id="apane-roles" class="admin-pane hidden">
@@ -852,21 +848,9 @@
                         <div id="backlogImportResult"></div>
                     </div>
 
-                    <div id="apane-nongrata" class="admin-pane hidden">
-                        <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Non Grata List</h3>
-                        <p class="card-subtitle" style="margin-top:0;">Individuals flagged as non grata. Fields: full name, gender, nationality, ID type, ID number, date of birth.</p>
-                        <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
-                            <p style="margin:0 0 12px;font-size:14px;color:#555;">
-                                Import from Excel — columns: <code>full_name*</code>, <code>gender</code>, <code>nationality</code>, <code>gov_id_type</code>, <code>gov_id_number</code>, <code>date_of_birth</code>
-                            </p>
-                            <input type="file" id="nonGrataImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
-                            <br>
-                            <button class="btn-submit" onclick="importNonGrataExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
-                        </div>
-                        <div id="nonGrataImportResult"></div>
-                        <div id="nonGrataListContainer"><p style="color:#888;">Loading...</p></div>
-                    </div>
-
+                    <!-- Non Grata admin pane removed — it's a duplicate of the standalone sidebar view.
+                         This feature is reserved for future use and should not be modified
+                         without confirming with the client. See #view-nongrata (standalone). -->
                     <div id="apane-induction" class="admin-pane hidden">
                         <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Induction Workbench</h3>
                         <p class="card-subtitle" style="margin-top:0;">Induction records. Fields: full name, gender, nationality, date of birth, gov ID, mobile, blood type, language, company, legal agreement, insurance validity, profession iqama, profession work, location, induction date, status.</p>
@@ -901,7 +885,7 @@
                     </p>
                     <input type="file" id="nonGrataImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
                     <br>
-                    <button class="btn-submit" onclick="importNonGrataExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                    <button id="nonGrataImportBtn" class="btn-submit" onclick="importNonGrataExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
                 </div>
                 <div id="nonGrataImportResult"></div>
                 <div id="nonGrataListContainer"><p style="color:#888;">Loading...</p></div>
@@ -2226,14 +2210,13 @@
         // ADMIN PANEL (unchanged from v0.5)
         // ==============================================
         function switchAdminTab(tab) {
-            ['users','roles','groups','usermgmt','lookups','settings','import','nongrata','induction'].forEach(t => {
+            ['users','roles','groups','usermgmt','lookups','settings','import','induction'].forEach(t => {
                 const tabEl = document.getElementById('atab-' + t);
                 const paneEl = document.getElementById('apane-' + t);
                 if (tabEl) tabEl.classList.toggle('active', t === tab);
                 if (paneEl) paneEl.classList.toggle('hidden', t !== tab);
             });
             if (tab === 'lookups') loadLookupTablesList();
-            if (tab === 'nongrata') loadNonGrata();
             if (tab === 'induction') loadInductionWorkbench();
             if (tab === 'usermgmt') { switchUserMgmtSubTab('external'); loadAdminExternal(); }
         }
@@ -2324,7 +2307,7 @@
 
             const fd = new FormData();
             fd.append('file', file);
-            const btn = document.querySelector('#apane-nongrata .btn-submit');
+            const btn = document.getElementById('nonGrataImportBtn');
             btn.disabled = true; btn.textContent = 'Importing...';
             resultDiv.innerHTML = '<div class="status-box" style="color:#888;">Importing...</div>';
 
