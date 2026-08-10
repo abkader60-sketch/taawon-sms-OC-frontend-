@@ -1881,6 +1881,8 @@
             const params = new URLSearchParams();
             if (statusFilter) params.set('status', statusFilter);
             if (searchFilter) params.set('search', searchFilter);
+            const cols = displayedColumns.filter(k => ALL_COLUMNS.some(c => c.key === k));
+            if (cols.length) params.set('columns', cols.join(','));
             const qs = params.toString();
             const url = `${API_BASE}/api/v1/applications/export${qs ? '?' + qs : ''}`;
             const xhr = new XMLHttpRequest();
