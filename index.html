@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
     <!--
         Configurable API base URL.
         - Local dev: leave the default empty content="" and the JS falls back to http://127.0.0.1:8000.
@@ -12,233 +15,275 @@
     <meta name="sms-api-base" content="https://securitysms-production.up.railway.app">
     <title>Ta'awon P3 SMS</title>
     <style>
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { min-width: 260px; background-color: #1a1c23; color: white; display: flex; flex-direction: column; z-index: 10; }
-        .sidebar-logo { padding: 20px; border-bottom: 1px solid #2d303a; color: #00a651; display: flex; flex-direction: column; gap: 5px; }
-        .logo-title { font-size: 20px; font-weight: bold; }
-        .logo-subtitle { font-size: 13px; font-weight: normal; color: #a0a5b1; }
-        .nav-item { padding: 15px 20px; color: #a0a5b1; text-decoration: none; border-left: 4px solid transparent; cursor: pointer; transition: 0.2s; }
-        .nav-item:hover, .nav-item.active { background-color: #262933; border-left-color: #00a651; color: white; }
-        .nav-item.disabled { opacity: 0.5; cursor: default; }
-
+        :root {
+            --color-primary-navy: #0F2D4E;
+            --color-primary-blue: #2563EB;
+            --color-steel: #5B7A99;
+            --color-bg: #F4F6F8;
+            --color-surface: #FFFFFF;
+            --color-border: #E2E8F0;
+            --color-approved: #16A34A;
+            --color-pending: #D97706;
+            --color-rejected: #DC2626;
+            --color-pending-hr: #7C3AED;
+            --font-heading: 'Manrope', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: var(--font-body); font-size: 14px; font-weight: 400; background-color: var(--color-bg); color: #1E293B; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { min-width: 260px; background-color: var(--color-primary-navy); color: white; display: flex; flex-direction: column; z-index: 10; }
+        .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .logo-title { font-family: var(--font-heading); font-size: 20px; font-weight: 700; color: #fff; }
+        .logo-subtitle { font-size: 13px; font-weight: 400; color: var(--color-steel); margin-top: 2px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 14px 20px; color: #94A3B8; text-decoration: none; border-left: 3px solid transparent; cursor: pointer; font-family: var(--font-heading); font-weight: 600; font-size: 14px; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); border-left-color: var(--color-primary-blue); color: #fff; }
+        .nav-item.disabled { opacity: 0.4; cursor: default; }
         .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        .header { background-color: #00a651; color: white; padding: 30px 40px 50px 40px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; position: relative; }
-        .header h1 { margin: 0; font-size: 26px; font-weight: 500; }
-        .header p { margin: 8px 0 0 0; opacity: 0.9; font-size: 15px; }
-        .role-picker-wrap { position: absolute; top: 22px; right: 40px; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.15); padding: 8px 14px; border-radius: 24px; }
-        .role-picker-wrap label { color: white; font-size: 12px; font-weight: 600; margin: 0; }
-        .role-picker-wrap select { background: white; color: #1a1c23; border: none; padding: 6px 10px; border-radius: 16px; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; min-width: 200px; }
-
-        .dashboard-area { padding: 0 40px 40px 40px; position: relative; top: -30px; }
-        .card { background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 30px; margin-bottom: 20px; }
-        .card-title { color: #00a651; font-weight: 600; font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .header { background: var(--color-primary-navy); color: white; padding: 28px 40px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; position: relative; }
+        .header h1 { margin: 0; font-family: var(--font-heading); font-size: 24px; font-weight: 700; }
+        .header p { margin: 6px 0 0 0; opacity: 0.75; font-size: 14px; font-weight: 400; }
+        .role-picker-wrap { position: absolute; top: 50%; right: 40px; transform: translateY(-50%); display: flex; align-items: center; gap: 10px; }
+        .role-picker-wrap label { color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 500; margin: 0; }
+        .role-picker-wrap select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; outline: none; min-width: 200px; }
+        .role-picker-wrap select option { color: #1E293B; background: #fff; }
+        .dashboard-area { padding: 24px 40px 40px 40px; }
+        .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 24px; }
+        .card-title { font-family: var(--font-heading); font-size: 18px; font-weight: 600; color: var(--color-primary-navy); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
         .card-title-actions { display: flex; gap: 8px; }
-        .card-subtitle { font-size: 13px; color: #666; font-weight: normal; margin-top: -10px; margin-bottom: 14px; }
+        .card-subtitle { font-size: 14px; color: var(--color-steel); font-weight: 400; margin-bottom: 16px; }
 
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .form-group { display: flex; flex-direction: column; }
         .form-group.full-width { grid-column: span 2; }
-        label { font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 600; }
-        input[type="text"], input[type="email"], input[type="date"], input[type="tel"], select, input[type="file"], textarea { padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; outline: none; transition: border 0.3s; font-family: inherit; box-sizing: border-box; }
-        input:focus, select:focus, textarea:focus { border-color: #00a651; }
+        label { font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--color-steel); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+        input[type="text"], input[type="email"], input[type="date"], input[type="tel"], input[type="password"], select, input[type="file"], textarea { padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 6px; font-family: var(--font-body); font-size: 14px; outline: none; transition: border 0.2s, box-shadow 0.2s; box-sizing: border-box; background: #fff; color: #1E293B; }
+        input:focus, select:focus, textarea:focus { border-color: var(--color-primary-blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
         .checkbox-group { display: flex; align-items: flex-start; gap: 8px; margin-top: 5px; }
-        .checkbox-group input { width: 16px; height: 16px; accent-color: #00a651; cursor: pointer; margin-top: 2px; flex-shrink: 0; }
-        .checkbox-group label { margin: 0; cursor: pointer; font-weight: normal; line-height: 1.4; }
-        .btn-submit { background-color: #00a651; color: white; border: none; padding: 14px 24px; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; width: 100%; transition: background 0.3s; margin-top: 10px; }
-        .btn-submit:hover { background-color: #008a43; }
-        .field-hint { font-size: 11px; color: #888; margin-top: 4px; font-style: italic; }
-        .inline-status { padding: 12px 14px; border-radius: 4px; margin: 10px 0 0 0; font-weight: 600; text-align: center; }
+        .checkbox-group input { width: 16px; height: 16px; accent-color: var(--color-primary-blue); cursor: pointer; margin-top: 2px; flex-shrink: 0; }
+        .checkbox-group label { margin: 0; cursor: pointer; font-weight: 400; text-transform: none; letter-spacing: normal; line-height: 1.4; }
+        .btn-submit { background-color: var(--color-primary-blue); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-family: var(--font-heading); font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-submit:hover { background-color: #1D4ED8; }
+        .field-hint { font-size: 11px; color: var(--color-steel); margin-top: 4px; font-style: italic; }
+        .inline-status { padding: 12px 14px; border-radius: 6px; margin: 10px 0 0 0; font-weight: 600; text-align: center; }
 
         .stat-cards { display: flex; gap: 16px; margin-bottom: 20px; }
-        .stat-card { flex: 1; background: #fff; border-radius: 10px; padding: 18px 20px; border-left: 5px solid #ccc; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
-        .stat-card .stat-number { font-size: 32px; font-weight: 700; line-height: 1.1; margin: 0 0 4px 0; }
-        .stat-card .stat-label { font-size: 13px; color: #666; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; margin: 0; }
-        .stat-card.stat-total   { border-left-color: #1a1c23; }
-        .stat-card.stat-total .stat-number { color: #1a1c23; }
-        .stat-card.stat-pending { border-left-color: #e65100; }
-        .stat-card.stat-pending .stat-number { color: #e65100; }
-        .stat-card.stat-approved { border-left-color: #2e7d32; }
-        .stat-card.stat-approved .stat-number { color: #2e7d32; }
-        .stat-card.stat-rejected { border-left-color: #c62828; }
-        .stat-card.stat-rejected .stat-number { color: #c62828; }
+        .stat-card { flex: 1; background: var(--color-surface); border-radius: 8px; padding: 20px; border-left: 4px solid #ccc; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid var(--color-border); position: relative; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+        .stat-card .stat-icon { margin-bottom: 4px; opacity: 0.6; display: flex; align-items: center; }
+        .stat-card .stat-number { font-family: var(--font-heading); font-size: 28px; font-weight: 700; line-height: 1.1; margin: 8px 0 4px 0; }
+        .stat-card .stat-label { font-family: var(--font-body); font-size: 12px; color: var(--color-steel); font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; margin: 0; }
+        .stat-card.stat-total   { border-left-color: var(--color-primary-blue); }
+        .stat-card.stat-total .stat-number { color: var(--color-primary-blue); }
+        .stat-card.stat-pending { border-left-color: var(--color-pending); }
+        .stat-card.stat-pending .stat-number { color: var(--color-pending); }
+        .stat-card.stat-approved { border-left-color: var(--color-approved); }
+        .stat-card.stat-approved .stat-number { color: var(--color-approved); }
+        .stat-card.stat-rejected { border-left-color: var(--color-rejected); }
+        .stat-card.stat-rejected .stat-number { color: var(--color-rejected); }
 
-        /* Variant info banner */
-        .variant-banner { padding: 12px 14px; border-radius: 4px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
-        .variant-banner.brief { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
-        .variant-banner.full  { background: #f3e5f5; color: #6a1b9a; border: 1px solid #e1bee7; }
-        .variant-banner.empty { background: #fafafa; color: #888; border: 1px dashed #ccc; }
+        .variant-banner { padding: 12px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .variant-banner.brief { background: #EFF6FF; color: var(--color-primary-blue); border: 1px solid #DBEAFE; }
+        .variant-banner.full  { background: #F5F3FF; color: #7C3AED; border: 1px solid #EDE9FE; }
+        .variant-banner.empty { background: #FAFAFA; color: var(--color-steel); border: 1px dashed #D1D5DB; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background-color: #f9fafb; color: #555; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { font-size: 13px; color: #333; }
-        tr:hover { background-color: #fcfcfc; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--color-border); }
+        th { font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--color-steel); text-transform: uppercase; letter-spacing: 0.03em; background-color: #F8FAFC; }
+        td { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: #334155; }
+        tr:hover { background-color: #F8FAFC; }
 
-        .badge { padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; white-space: nowrap; }
-        .badge-pending  { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
-        .badge-security { background-color: #f3e5f5; color: #6a1b9a; border: 1px solid #e1bee7; }
-        .badge-history  { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
-        .badge-approved { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-        .badge-rejected { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
-        .badge-edit     { background-color: #fff8e1; color: #6d4c00; border: 1px solid #ffe0a3; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-family: var(--font-body); font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
+        .badge-pending  { background-color: #FEF3C7; color: var(--color-pending); border: 1px solid #FDE68A; }
+        .badge-security { background-color: #F5F3FF; color: #7C3AED; border: 1px solid #EDE9FE; }
+        .badge-history  { background-color: #EFF6FF; color: var(--color-primary-blue); border: 1px solid #DBEAFE; }
+        .badge-approved { background-color: #DCFCE7; color: var(--color-approved); border: 1px solid #BBF7D0; }
+        .badge-rejected { background-color: #FEE2E2; color: var(--color-rejected); border: 1px solid #FECACA; }
+        .badge-edit     { background-color: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
 
-        .btn-action { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; margin-right: 5px; margin-bottom: 4px; }
-        .btn-view    { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
-        .btn-view:hover { background-color: #bbdefb; }
-        .btn-approve { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-        .btn-approve:hover { background-color: #c8e6c9; }
-        .btn-reject  { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
-        .btn-reject:hover { background-color: #ffcdd2; }
-        .btn-edit    { background-color: #fff8e1; color: #6d4c00; border: 1px solid #ffe0a3; }
-        .btn-edit:hover { background-color: #ffe0a3; }
-        .btn-save    { background-color: #00a651; color: white; border: 1px solid #008a43; }
-        .btn-save:hover { background-color: #008a43; }
-        .btn-export  { background-color: #00a651; color: white; border: 1px solid #008a43; padding: 8px 16px; }
-        .btn-export:hover { background-color: #008a43; }
-        .btn-small   { padding: 2px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; }
-        .btn-danger  { background-color: #c62828; color: white; border: 1px solid #b71c1c; }
-        .btn-danger:hover { background-color: #b71c1c; }
+        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; font-family: var(--font-body); font-size: 12px; font-weight: 600; transition: 0.2s; margin-right: 5px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-view    { background-color: #EFF6FF; color: var(--color-primary-blue); border: 1px solid #DBEAFE; }
+        .btn-view:hover { background-color: #DBEAFE; }
+        .btn-approve { background-color: #DCFCE7; color: var(--color-approved); border: 1px solid #BBF7D0; }
+        .btn-approve:hover { background-color: #BBF7D0; }
+        .btn-reject  { background-color: #FEE2E2; color: var(--color-rejected); border: 1px solid #FECACA; }
+        .btn-reject:hover { background-color: #FECACA; }
+        .btn-edit    { background-color: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+        .btn-edit:hover { background-color: #FDE68A; }
+        .btn-save    { background-color: var(--color-primary-blue); color: white; border: 1px solid #1D4ED8; }
+        .btn-save:hover { background-color: #1D4ED8; }
+        .btn-export  { background-color: var(--color-primary-navy); color: white; border: 1px solid var(--color-primary-navy); padding: 8px 16px; }
+        .btn-export:hover { background-color: #1A3A5C; }
+        .btn-small   { padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-family: var(--font-body); font-size: 11px; font-weight: 600; transition: 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-danger  { background-color: var(--color-rejected); color: white; border: 1px solid #B91C1C; }
+        .btn-danger:hover { background-color: #B91C1C; }
         .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
-        .refresh-btn { background-color: white; border: 1px solid #ddd; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; color: #555; }
-        .refresh-btn:hover { background-color: #f0f0f0; }
+        .refresh-btn { background-color: var(--color-surface); border: 1px solid var(--color-border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--color-primary-navy); display: inline-flex; align-items: center; gap: 6px; }
+        .refresh-btn:hover { background-color: #F8FAFC; }
 
-        .app-id-link { color: #1565c0; text-decoration: none; font-weight: 600; cursor: pointer; }
+        .app-id-link { color: var(--color-primary-blue); text-decoration: none; font-family: var(--font-mono); font-weight: 500; cursor: pointer; }
         .app-id-link:hover { text-decoration: underline; }
 
-        .status-box { padding: 15px; margin-bottom: 20px; border-radius: 4px; font-weight: bold; text-align: center; }
-        .success-msg { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-        .error-msg { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
-        .info-msg { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
-        .warning-msg { background-color: #fff8e1; color: #6d4c00; border: 1px solid #ffe0a3; }
+        .status-box { padding: 15px; margin-bottom: 20px; border-radius: 6px; font-weight: 600; text-align: center; }
+        .success-msg { background-color: #DCFCE7; color: var(--color-approved); border: 1px solid #BBF7D0; }
+        .error-msg { background-color: #FEE2E2; color: var(--color-rejected); border: 1px solid #FECACA; }
+        .info-msg { background-color: #EFF6FF; color: var(--color-primary-blue); border: 1px solid #DBEAFE; }
+        .warning-msg { background-color: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
         .hidden { display: none !important; }
-        .comments-text { font-style: italic; color: #777; font-size: 12px; }
-        .dev-note { background-color: #fff8e1; color: #6d4c00; border: 1px solid #ffe0a3; padding: 10px 14px; border-radius: 4px; font-size: 12px; margin-bottom: 18px; }
-        .no-perm-text { font-size: 11px; color: #888; font-style: italic; }
+        .comments-text { font-style: italic; color: var(--color-steel); font-size: 12px; }
+        .dev-note { background-color: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 18px; }
+        .no-perm-text { font-size: 11px; color: var(--color-steel); font-style: italic; }
 
-        .audit-group { border: 1px solid #eee; border-radius: 6px; margin-bottom: 8px; overflow: hidden; }
-        .audit-group-header { padding: 10px 14px; background: #fafafa; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 13px; user-select: none; }
-        .audit-group-header:hover { background: #f0f0f0; }
-        .audit-group-header .caret { color: #888; font-size: 12px; transition: transform 0.15s; display: inline-block; }
+        .audit-group { border: 1px solid var(--color-border); border-radius: 6px; margin-bottom: 8px; overflow: hidden; }
+        .audit-group-header { padding: 10px 14px; background: #F8FAFC; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 13px; user-select: none; }
+        .audit-group-header:hover { background: #F1F5F9; }
+        .audit-group-header .caret { color: var(--color-steel); font-size: 12px; transition: transform 0.15s; display: inline-block; }
         .audit-group.expanded .audit-group-header .caret { transform: rotate(90deg); }
-        .audit-group-summary { color: #555; }
-        .audit-group-summary strong { color: #1a1c23; }
+        .audit-group-summary { color: #475569; }
+        .audit-group-summary strong { color: var(--color-primary-navy); }
         .audit-events { display: none; padding: 4px 0; }
         .audit-group.expanded .audit-events { display: block; }
-        .audit-event { padding: 8px 14px 8px 30px; border-top: 1px solid #f4f4f4; display: grid; grid-template-columns: 130px 100px 130px 1fr 1fr; gap: 12px; align-items: baseline; font-size: 12px; }
-        .audit-event-time { color: #888; font-size: 11px; }
+        .audit-event { padding: 8px 14px 8px 30px; border-top: 1px solid var(--color-border); display: grid; grid-template-columns: 130px 100px 130px 1fr 1fr; gap: 12px; align-items: baseline; font-size: 12px; }
+        .audit-event-time { color: var(--color-steel); font-size: 11px; }
 
-        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
-        .modal { background: white; border-radius: 8px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .modal-header { padding: 20px 30px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 1; }
-        .modal-header h2 { margin: 0; color: #00a651; font-size: 20px; }
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(15,45,78,0.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .modal { background: var(--color-surface); border-radius: 8px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px 30px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--color-surface); z-index: 1; }
+        .modal-header h2 { margin: 0; font-family: var(--font-heading); font-size: 18px; font-weight: 600; color: var(--color-primary-navy); }
         .modal-header-actions { display: flex; gap: 8px; align-items: center; }
-        .modal-close { background: transparent; border: none; font-size: 24px; cursor: pointer; color: #888; padding: 0 4px; }
-        .modal-close:hover { color: #333; }
+        .modal-close { background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--color-steel); padding: 0 4px; }
+        .modal-close:hover { color: var(--color-primary-navy); }
         .modal-body { padding: 25px 30px; }
-        .modal-footer { padding: 15px 30px; border-top: 1px solid #eee; text-align: right; background: #fafafa; border-radius: 0 0 8px 8px; }
-        .modal-footer button { padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; border: none; font-size: 14px; }
-        .modal-footer .btn-cancel { background: #eee; color: #333; margin-right: 10px; }
-        .modal-footer .btn-confirm-reject { background: #c62828; color: white; }
-        .modal-footer .btn-cancel:hover { background: #ddd; }
-        .modal-footer .btn-confirm-reject:hover { background: #b71c1c; }
+        .modal-footer { padding: 15px 30px; border-top: 1px solid var(--color-border); text-align: right; background: #F8FAFC; border-radius: 0 0 8px 8px; }
+        .modal-footer button { padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; font-family: var(--font-body); font-size: 14px; }
+        .modal-footer .btn-cancel { background: #F1F5F9; color: var(--color-primary-navy); margin-right: 10px; }
+        .modal-footer .btn-confirm-reject { background: var(--color-rejected); color: white; }
+        .modal-footer .btn-cancel:hover { background: #E2E8F0; }
+        .modal-footer .btn-confirm-reject:hover { background: #B91C1C; }
 
         .detail-grid { display: grid; grid-template-columns: 180px 1fr; gap: 8px 20px; font-size: 13px; }
-        .detail-grid dt { font-weight: 600; color: #555; }
-        .detail-grid dd { margin: 0; color: #222; }
-        .detail-grid input, .detail-grid select { padding: 6px 8px; font-size: 13px; }
-        .section-heading { font-weight: 600; color: #00a651; font-size: 14px; margin: 20px 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #f0f0f0; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .attachment-link { display: inline-block; padding: 6px 12px; background: #e3f2fd; color: #1565c0; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: 600; margin: 4px 4px 4px 0; cursor: pointer; }
-        .attachment-link:hover { background: #bbdefb; }
-        .attachment-preview-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px; }
-        .attachment-preview-container { background: #fff; border-radius: 8px; width: 90%; max-width: 900px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
-        .attachment-preview-header { padding: 16px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .attachment-preview-header h3 { margin: 0; color: #00a651; font-size: 16px; }
-        .attachment-preview-body { padding: 20px; overflow-y: auto; flex: 1; display: flex; align-items: center; justify-content: center; background: #f5f5f5; min-height: 300px; }
+        .detail-grid dt { font-weight: 600; color: var(--color-steel); }
+        .detail-grid dd { margin: 0; color: #334155; }
+        .detail-grid input, .detail-grid select { padding: 6px 8px; font-size: 13px; border: 1px solid var(--color-border); border-radius: 4px; }
+
+        .section-heading { font-family: var(--font-heading); font-weight: 600; color: var(--color-primary-navy); font-size: 14px; margin: 20px 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--color-border); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+
+        .attachment-link { display: inline-block; padding: 6px 12px; background: #EFF6FF; color: var(--color-primary-blue); border-radius: 6px; text-decoration: none; font-family: var(--font-body); font-size: 12px; font-weight: 600; margin: 4px 4px 4px 0; cursor: pointer; }
+        .attachment-link:hover { background: #DBEAFE; }
+
+        .attachment-preview-modal { position: fixed; inset: 0; background: rgba(15,45,78,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px; }
+        .attachment-preview-container { background: var(--color-surface); border-radius: 8px; width: 90%; max-width: 900px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+        .attachment-preview-header { padding: 16px 24px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; }
+        .attachment-preview-header h3 { margin: 0; font-family: var(--font-heading); font-size: 16px; font-weight: 600; color: var(--color-primary-navy); }
+        .attachment-preview-body { padding: 20px; overflow-y: auto; flex: 1; display: flex; align-items: center; justify-content: center; background: #F8FAFC; min-height: 300px; }
         .attachment-preview-body img { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px; }
         .attachment-preview-body iframe { width: 100%; height: 70vh; border: none; border-radius: 4px; }
         .attachment-preview-body .download-fallback { text-align: center; padding: 40px; }
-        .attachment-preview-body .download-fallback p { color: #666; margin-bottom: 16px; }
-        .reject-reason-textarea { width: 100%; min-height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 14px; resize: vertical; box-sizing: border-box; }
+        .attachment-preview-body .download-fallback p { color: var(--color-steel); margin-bottom: 16px; }
+        .reject-reason-textarea { width: 100%; min-height: 100px; padding: 10px; border: 1px solid var(--color-border); border-radius: 6px; font-family: var(--font-body); font-size: 14px; resize: vertical; box-sizing: border-box; }
 
-        .admin-tabs { display: flex; gap: 4px; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px; flex-wrap: wrap; }
-        .admin-tab { padding: 12px 20px; cursor: pointer; font-weight: 600; color: #666; font-size: 13px; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: 0.2s; white-space: nowrap; }
-        .admin-tab:hover { color: #00a651; }
-        .admin-tab.active { color: #00a651; border-bottom-color: #00a651; }
+        .admin-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--color-border); margin-bottom: 20px; flex-wrap: wrap; }
+        .admin-tab { padding: 10px 16px; cursor: pointer; font-family: var(--font-heading); font-weight: 600; color: var(--color-steel); font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: 0.2s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+        .admin-tab:hover { color: var(--color-primary-navy); }
+        .admin-tab.active { color: var(--color-primary-blue); border-bottom-color: var(--color-primary-blue); }
+        #atab-users.active { color: #2563EB; border-bottom-color: #2563EB; }
+        #atab-roles.active { color: #7C3AED; border-bottom-color: #7C3AED; }
+        #atab-groups.active { color: #0D9488; border-bottom-color: #0D9488; }
+        #atab-usermgmt.active { color: #D97706; border-bottom-color: #D97706; }
+        #atab-lookups.active { color: #4F46E5; border-bottom-color: #4F46E5; }
+        #atab-settings.active { color: #475569; border-bottom-color: #475569; }
+        #atab-import.active { color: #0891B2; border-bottom-color: #0891B2; }
+        #atab-induction.active { color: #16A34A; border-bottom-color: #16A34A; }
+        #us-tab-external.active { color: #D97706; border-bottom-color: #D97706; }
+        #us-tab-sysusers.active { color: #5B7A99; border-bottom-color: #5B7A99; }
 
-        .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; padding: 12px; background: #fafafa; border-radius: 4px; }
-        .perm-grid label { font-weight: normal; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .role-card, .group-card { border: 1px solid #eee; border-radius: 6px; padding: 16px; margin-bottom: 12px; background: #fff; }
+        .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; padding: 12px; background: #F8FAFC; border-radius: 6px; }
+        .perm-grid label { font-weight: 400; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+
+        .role-card, .group-card { border: 1px solid var(--color-border); border-radius: 6px; padding: 16px; margin-bottom: 12px; background: var(--color-surface); }
         .role-card-header, .group-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-        .role-card-header strong, .group-card-header strong { font-size: 15px; color: #1a1c23; }
-        .role-card-header .role-id, .group-card-header .group-id { font-size: 11px; color: #999; }
-        .member-list { font-size: 12px; color: #555; margin-top: 6px; }
-        .multi-checkbox-list { max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 4px; background: #fafafa; }
-        .multi-checkbox-list label { font-weight: normal; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 3px 0; }
-        .small-form-grid { display: grid; gap: 12px; align-items: end; padding: 14px; background: #fafafa; border-radius: 4px; margin-top: 10px; }
+        .role-card-header strong, .group-card-header strong { font-family: var(--font-heading); font-size: 15px; font-weight: 600; color: var(--color-primary-navy); }
+        .role-card-header .role-id, .group-card-header .group-id { font-size: 11px; color: var(--color-steel); }
+        .member-list { font-size: 12px; color: var(--color-steel); margin-top: 6px; }
+        .multi-checkbox-list { max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid var(--color-border); border-radius: 6px; background: #F8FAFC; }
+        .multi-checkbox-list label { font-weight: 400; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+        .small-form-grid { display: grid; gap: 12px; align-items: end; padding: 14px; background: #F8FAFC; border-radius: 6px; margin-top: 10px; }
         .small-form-grid input, .small-form-grid select { padding: 8px; }
         .small-form-grid button { padding: 9px 18px; }
         .inactive-row td { opacity: 0.55; }
 
-        .submitter-card { border: 1px solid #eee; border-radius: 6px; padding: 14px; margin-bottom: 10px; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
-        .submitter-card .meta { font-size: 12px; color: #666; }
-        .submitter-card strong { color: #1a1c23; }
+        .submitter-card { border: 1px solid var(--color-border); border-radius: 6px; padding: 14px; margin-bottom: 10px; background: var(--color-surface); display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+        .submitter-card .meta { font-size: 12px; color: var(--color-steel); }
+        .submitter-card strong { color: var(--color-primary-navy); }
         .group-tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 6px; }
-        .group-tag-1 { background: #e3f2fd; color: #1565c0; }
-        .group-tag-2 { background: #f3e5f5; color: #6a1b9a; }
+        .group-tag-1 { background: #EFF6FF; color: var(--color-primary-blue); }
+        .group-tag-2 { background: #F5F3FF; color: #7C3AED; }
 
-        .setting-row { display: grid; grid-template-columns: 250px 1fr auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; }
-        .setting-row .setting-key { font-weight: 600; color: #1a1c23; font-size: 13px; }
-        .setting-row .setting-desc { font-size: 11px; color: #888; margin-top: 2px; font-style: italic; }
+        .setting-row { display: grid; grid-template-columns: 250px 1fr auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid var(--color-border); border-radius: 6px; margin-bottom: 10px; }
+        .setting-row .setting-key { font-weight: 600; color: var(--color-primary-navy); font-size: 13px; }
+        .setting-row .setting-desc { font-size: 11px; color: var(--color-steel); margin-top: 2px; font-style: italic; }
 
-        .lookup-add-form { display: flex; gap: 10px; align-items: end; margin-bottom: 16px; padding: 14px; background: #fafafa; border-radius: 4px; }
+        .lookup-add-form { display: flex; gap: 10px; align-items: end; margin-bottom: 16px; padding: 14px; background: #F8FAFC; border-radius: 6px; }
         .lookup-add-form .form-group { margin-bottom: 0; }
         .lookup-add-form input { padding: 8px; }
         .lookup-add-form button { padding: 9px 18px; }
 
-        /* Column selector modal */
         .col-selector-wrap { display: flex; gap: 16px; align-items: stretch; min-height: 300px; }
         .col-selector-box { flex: 1; display: flex; flex-direction: column; }
-        .col-selector-box label { font-weight: 600; font-size: 13px; color: #555; margin-bottom: 6px; display: block; }
-        .col-selector-box select { flex: 1; border: 1px solid #ddd; border-radius: 4px; padding: 6px; font-size: 13px; min-height: 260px; background: #fff; }
+        .col-selector-box label { font-weight: 600; font-size: 13px; color: var(--color-steel); margin-bottom: 6px; display: block; }
+        .col-selector-box select { flex: 1; border: 1px solid var(--color-border); border-radius: 6px; padding: 6px; font-size: 13px; min-height: 260px; background: var(--color-surface); }
         .col-selector-box select option { padding: 5px 8px; }
-        .col-selector-box select option:checked { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+        .col-selector-box select option:checked { background: #EFF6FF; color: var(--color-primary-blue); font-weight: 600; }
         .col-selector-arrows { display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 0 4px; }
         .col-selector-reorder { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
         .col-selector-reorder button { padding: 4px 12px; font-size: 13px; }
 
-        /* ===== v0.8: Auth overlays ===== */
-        .auth-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #00733e 0%, #00a651 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
-        .auth-card { background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 420px; padding: 36px 32px; }
-        .auth-card h1 { margin: 0 0 6px; color: #1a1c23; font-size: 22px; }
-        .auth-card .auth-subtitle { color: #666; font-size: 13px; margin: 0 0 24px; }
+        .auth-overlay { position: fixed; inset: 0; background: var(--color-primary-navy); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+        .auth-card { background: var(--color-surface); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 420px; padding: 36px 32px; }
+        .auth-card h1 { margin: 0 0 6px; font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--color-primary-navy); }
+        .auth-card .auth-subtitle { color: var(--color-steel); font-size: 13px; margin: 0 0 24px; }
         .auth-card .form-group { margin-bottom: 16px; }
-        .auth-card label { display: block; font-size: 12px; color: #555; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
-        .auth-card input[type="text"], .auth-card input[type="email"], .auth-card input[type="password"] { width: 100%; padding: 12px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-        .auth-card input:focus { outline: none; border-color: #00a651; box-shadow: 0 0 0 3px rgba(0,166,81,0.15); }
-        .auth-card .auth-submit { width: 100%; padding: 14px; background: #00a651; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 0.03em; }
-        .auth-card .auth-submit:hover { background: #008f44; }
-        .auth-card .auth-submit:disabled { background: #aaa; cursor: not-allowed; }
-        .auth-card .auth-error { background: #fee; color: #c00; padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; border: 1px solid #fcc; }
-        .auth-card .auth-info { background: #fff8e1; color: #6d4c00; padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; border: 1px solid #ffe082; }
-        .auth-card .auth-toggle { text-align: center; margin-top: 18px; font-size: 12px; color: #777; }
-        .auth-card .auth-toggle a { color: #00a651; text-decoration: none; font-weight: 600; cursor: pointer; }
+        .auth-card label { display: block; font-size: 12px; color: var(--color-steel); font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .auth-card input[type="text"], .auth-card input[type="email"], .auth-card input[type="password"] { width: 100%; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; font-family: var(--font-body); box-sizing: border-box; }
+        .auth-card input:focus { outline: none; border-color: var(--color-primary-blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        .auth-card .auth-submit { width: 100%; padding: 14px; background: var(--color-primary-blue); color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font-heading); }
+        .auth-card .auth-submit:hover { background: #1D4ED8; }
+        .auth-card .auth-submit:disabled { background: var(--color-steel); cursor: not-allowed; }
+        .auth-card .auth-error { background: #FEE2E2; color: var(--color-rejected); padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; border: 1px solid #FECACA; }
+        .auth-card .auth-info { background: #FEF3C7; color: #B45309; padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; border: 1px solid #FDE68A; }
+        .auth-card .auth-toggle { text-align: center; margin-top: 18px; font-size: 12px; color: var(--color-steel); }
+        .auth-card .auth-toggle a { color: var(--color-primary-blue); text-decoration: none; font-weight: 600; cursor: pointer; }
         .auth-card .auth-toggle a:hover { text-decoration: underline; }
 
-        /* Logged-in user chip */
         .user-chip { display: flex; align-items: center; gap: 10px; }
         .user-chip-info { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
-        .user-chip-info .uname { font-size: 13px; font-weight: 600; color: #fff; }
-        .user-chip-info .urole { font-size: 11px; color: #d4f0d8; }
-        .logout-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25); padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
-        .logout-btn:hover { background: rgba(255,255,255,0.25); }
+        .user-chip-info .uname { font-family: var(--font-heading); font-size: 13px; font-weight: 600; color: #fff; }
+        .user-chip-info .urole { font-family: var(--font-body); font-size: 11px; color: rgba(255,255,255,0.65); }
+        .logout-btn { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; font-family: var(--font-body); font-size: 12px; cursor: pointer; }
+        .logout-btn:hover { background: rgba(255,255,255,0.2); }
 
-        /* External-submitter mode: hide sidebar entirely */
         body.external-mode .sidebar { display: none; }
         body.external-mode .main-content { margin-left: 0 !important; }
-
-        /* Hide the main app until logged in */
         body:not(.app-loaded) .sidebar,
         body:not(.app-loaded) .main-content { display: none !important; }
+
+        :focus-visible { outline: 2px solid var(--color-primary-blue); outline-offset: 2px; }
+        @media (max-width: 768px) {
+            .stat-cards { flex-direction: column; }
+            .header { padding: 20px; }
+            .header h1 { font-size: 20px; }
+            .dashboard-area { padding: 16px; }
+            .role-picker-wrap { position: static; transform: none; margin-top: 12px; justify-content: flex-end; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full-width { grid-column: span 1; }
+            .sidebar { min-width: 200px; }
+            .audit-event { grid-template-columns: 1fr; }
+            .detail-grid { grid-template-columns: 1fr; }
+            .setting-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .sidebar { min-width: 56px; }
+            .card { padding: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -322,11 +367,11 @@
             <div class="logo-title">◆ Ta'awon P3: SMS</div>
             <div class="logo-subtitle">Security Management System</div>
         </div>
-        <div class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')">Action Dashboard</div>
-        <div class="nav-item" id="nav-id-form" onclick="switchView('id-form')">Site Access ID Form</div>
-        <div class="nav-item hidden" id="nav-admin" onclick="switchView('admin')">Admin</div>
-        <div class="nav-item hidden" id="nav-nongrata" onclick="switchView('nongrata')">Non Grata</div>
-        <div class="nav-item disabled">Material Gate Pass (Coming Soon)</div>
+        <div class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')"><i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i> Action Dashboard</div>
+        <div class="nav-item" id="nav-id-form" onclick="switchView('id-form')"><i data-lucide="id-card" style="width:18px;height:18px;"></i> Site Access ID Form</div>
+        <div class="nav-item hidden" id="nav-admin" onclick="switchView('admin')"><i data-lucide="settings" style="width:18px;height:18px;"></i> Admin</div>
+        <div class="nav-item hidden" id="nav-nongrata" onclick="switchView('nongrata')"><i data-lucide="shield-off" style="width:18px;height:18px;"></i> Non Grata</div>
+        <div class="nav-item disabled"><i data-lucide="file-text" style="width:18px;height:18px;"></i> Material Gate Pass (Coming Soon)</div>
     </div>
 
     <div class="main-content">
@@ -352,7 +397,7 @@
                 <div class="card">
                     <div class="card-title">
                         Pending Applications
-                        <button class="refresh-btn" onclick="fetchAllData()">↻ Refresh</button>
+                        <button class="refresh-btn" onclick="fetchAllData()"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
                     </div>
                     <table>
                         <thead>
@@ -365,22 +410,26 @@
                 <div class="card">
                     <div class="card-title">
                         All Applications
-                        <div class="card-title-actions"><button class="refresh-btn btn-export" onclick="exportToExcel()">⤓ Export to Excel</button></div>
+                        <div class="card-title-actions"><button class="refresh-btn btn-export" onclick="exportToExcel()"><i data-lucide="download" style="width:14px;height:14px;"></i> Export to Excel</button></div>
                     </div>
                     <div class="stat-cards">
                         <div class="stat-card stat-total">
+                            <div class="stat-icon"><i data-lucide="bar-chart-3" style="width:22px;height:22px;"></i></div>
                             <p class="stat-number" id="statTotal">0</p>
                             <p class="stat-label">Total Applications</p>
                         </div>
                         <div class="stat-card stat-pending">
+                            <div class="stat-icon"><i data-lucide="clock" style="width:22px;height:22px;"></i></div>
                             <p class="stat-number" id="statPending">0</p>
                             <p class="stat-label">Pending</p>
                         </div>
                         <div class="stat-card stat-approved">
+                            <div class="stat-icon"><i data-lucide="check-circle" style="width:22px;height:22px;"></i></div>
                             <p class="stat-number" id="statApproved">0</p>
                             <p class="stat-label">Approved</p>
                         </div>
                         <div class="stat-card stat-rejected">
+                            <div class="stat-icon"><i data-lucide="x-circle" style="width:22px;height:22px;"></i></div>
                             <p class="stat-number" id="statRejected">0</p>
                             <p class="stat-label">Rejected</p>
                         </div>
@@ -395,7 +444,7 @@
                             <option value="Approved">Approved</option>
                             <option value="Rejected">Rejected</option>
                         </select>
-                        <button class="btn-action btn-view" onclick="openColumnSelector()" style="white-space:nowrap;padding:8px 14px;font-size:13px;">☰ Columns</button>
+                        <button class="btn-action btn-view" onclick="openColumnSelector()" style="white-space:nowrap;padding:8px 14px;font-size:13px;"><i data-lucide="columns" style="width:14px;height:14px;"></i> Columns</button>
                     </div>
                     <div style="overflow-x: auto; max-width: 100%;">
                         <table>
@@ -497,7 +546,7 @@
                                 <label>Full Name (as per Iqama / Passport) *</label>
                                 <div style="display:flex;gap:8px;align-items:stretch;">
                                     <input type="text" id="fullName" required style="flex:1;" oninput="onFullNameChange()">
-                                    <button type="button" class="btn-action btn-view" onclick="lookupInduction()" title="Search Induction Workbench for auto-fill" style="white-space:nowrap;padding:8px 12px;font-size:12px;">&#128269; Induction</button>
+                                    <button type="button" class="btn-action btn-view" onclick="lookupInduction()" title="Search Induction Workbench for auto-fill" style="white-space:nowrap;padding:8px 12px;font-size:12px;"><i data-lucide="search" style="width:14px;height:14px;"></i> Induction</button>
                                 </div>
                                 <div id="inductionLookupResults" style="margin-top:6px;display:none;"></div>
                             </div>
@@ -693,7 +742,7 @@
                         </div>
                     </div>
 
-                    <button type="button" class="btn-submit" onclick="doSubmitApplication()">Submit Application</button>
+                    <button type="button" class="btn-submit" onclick="doSubmitApplication()"><i data-lucide="send" style="width:16px;height:16px;"></i> Submit Application</button>
                     <div id="formStatusMessage" class="inline-status hidden"></div>
                 </form>
             </div>
@@ -703,14 +752,14 @@
                 <div id="adminStatusMessage" class="status-box hidden"></div>
                 <div class="card">
                     <div class="admin-tabs">
-                        <div class="admin-tab active" id="atab-users"     onclick="switchAdminTab('users')">Internal Users</div>
-                        <div class="admin-tab"        id="atab-roles"     onclick="switchAdminTab('roles')">Roles &amp; Permissions</div>
-                        <div class="admin-tab"        id="atab-groups"    onclick="switchAdminTab('groups')">Groups</div>
-                        <div class="admin-tab"        id="atab-usermgmt"  onclick="switchAdminTab('usermgmt')">User Management</div>
-                        <div class="admin-tab"        id="atab-lookups"   onclick="switchAdminTab('lookups')">Lookup Tables</div>
-                        <div class="admin-tab"        id="atab-settings"  onclick="switchAdminTab('settings')">System Settings</div>
-                        <div class="admin-tab"        id="atab-import"    onclick="switchAdminTab('import')">Import Backlog</div>
-                        <div class="admin-tab"        id="atab-induction" onclick="switchAdminTab('induction')">Induction WB</div>
+                        <div class="admin-tab active" id="atab-users"     onclick="switchAdminTab('users')"><i data-lucide="users" style="width:16px;height:16px;"></i> Internal Users</div>
+                        <div class="admin-tab"        id="atab-roles"     onclick="switchAdminTab('roles')"><i data-lucide="shield" style="width:16px;height:16px;"></i> Roles &amp; Permissions</div>
+                        <div class="admin-tab"        id="atab-groups"    onclick="switchAdminTab('groups')"><i data-lucide="layers" style="width:16px;height:16px;"></i> Groups</div>
+                        <div class="admin-tab"        id="atab-usermgmt"  onclick="switchAdminTab('usermgmt')"><i data-lucide="user-plus" style="width:16px;height:16px;"></i> User Management</div>
+                        <div class="admin-tab"        id="atab-lookups"   onclick="switchAdminTab('lookups')"><i data-lucide="database" style="width:16px;height:16px;"></i> Lookup Tables</div>
+                        <div class="admin-tab"        id="atab-settings"  onclick="switchAdminTab('settings')"><i data-lucide="sliders" style="width:16px;height:16px;"></i> System Settings</div>
+                        <div class="admin-tab"        id="atab-import"    onclick="switchAdminTab('import')"><i data-lucide="upload" style="width:16px;height:16px;"></i> Import Backlog</div>
+                        <div class="admin-tab"        id="atab-induction" onclick="switchAdminTab('induction')"><i data-lucide="graduation-cap" style="width:16px;height:16px;"></i> Induction WB</div>
                     </div>
 
                     <div id="apane-users" class="admin-pane">
@@ -720,12 +769,6 @@
                             <thead><tr><th>ID</th><th>Full Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
                             <tbody id="adminUsersTableBody"><tr><td colspan="6" style="text-align:center;color:#888;">Loading...</td></tr></tbody>
                         </table>
-                        <div class="small-form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;margin-top:20px;">
-                            <div><label>Full name</label><input type="text" id="newUserFullName"></div>
-                            <div><label>Username</label><input type="text" id="newUserUsername"></div>
-                            <div><label>Role</label><select id="newUserRoleId"></select></div>
-                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createUser()">Add User</button></div>
-                        </div>
                     </div>
 
                     <div id="apane-roles" class="admin-pane hidden">
@@ -736,7 +779,7 @@
                         <div class="small-form-grid" style="grid-template-columns: 1fr 2fr auto;">
                             <div><label>Role name</label><input type="text" id="newRoleName"></div>
                             <div><label>Description</label><input type="text" id="newRoleDescription"></div>
-                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createRole()">Add Role</button></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createRole()"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add Role</button></div>
                         </div>
                         <p class="field-hint">Set the permissions for the new role above.</p>
                     </div>
@@ -749,14 +792,14 @@
                         <div class="small-form-grid" style="grid-template-columns: 1fr 2fr auto;">
                             <div><label>Group name</label><input type="text" id="newGroupName"></div>
                             <div><label>Description</label><input type="text" id="newGroupDescription"></div>
-                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createGroup()">Add Group</button></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createGroup()"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add Group</button></div>
                         </div>
                     </div>
 
                     <div id="apane-usermgmt" class="admin-pane hidden">
                         <div class="admin-tabs" style="margin-bottom:16px;">
-                            <div class="admin-tab active" id="us-tab-external" onclick="switchUserMgmtSubTab('external')">External Submitters</div>
-                            <div class="admin-tab"        id="us-tab-sysusers" onclick="switchUserMgmtSubTab('sysusers')">System Users</div>
+                            <div class="admin-tab active" id="us-tab-external" onclick="switchUserMgmtSubTab('external')"><i data-lucide="external-link" style="width:16px;height:16px;"></i> External Submitters</div>
+                            <div class="admin-tab"        id="us-tab-sysusers" onclick="switchUserMgmtSubTab('sysusers')"><i data-lucide="terminal" style="width:16px;height:16px;"></i> System Users</div>
                         </div>
 
                         <div id="us-section-external">
@@ -769,7 +812,7 @@
                                 <div><label>Full name</label><input type="text" id="newExtFullName"></div>
                                 <div><label>Email</label><input type="email" id="newExtEmail"></div>
                                 <div><label>Organization</label><select id="newExtOrgId"></select></div>
-                                <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createExternalSubmitter()">Create Account</button></div>
+                                <div><button class="btn-submit" style="margin-top:0;width:auto;" onclick="createExternalSubmitter()"><i data-lucide="user-plus" style="width:14px;height:14px;"></i> Create Account</button></div>
                             </div>
                         </div>
 
@@ -792,7 +835,7 @@
                                     <div class="form-group"><label>Company</label><input type="text" id="newSysCompany"></div>
                                     <div class="form-group"><label>Role</label><input type="text" id="newSysRole"></div>
                                 </div>
-                                <button id="createSysUserBtn" class="btn-submit" style="margin-top:16px;width:auto;padding:12px 28px;" onclick="createSingleSystemUser()">Create System User</button>
+                                <button id="createSysUserBtn" class="btn-submit" style="margin-top:16px;width:auto;padding:12px 28px;" onclick="createSingleSystemUser()"><i data-lucide="user-plus" style="width:14px;height:14px;"></i> Create System User</button>
                                 <div id="createSysUserResult" style="margin-top:12px;"></div>
                             </div>
                             <!-- Bulk import -->
@@ -802,7 +845,7 @@
                                 </p>
                                 <input type="file" id="sysusersImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
                                 <br>
-                                <button id="sysusersImportBtn" class="btn-submit" onclick="importSystemUsersExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                                <button id="sysusersImportBtn" class="btn-submit" onclick="importSystemUsersExcel()" style="display:inline-block;width:auto;padding:12px 32px;"><i data-lucide="upload" style="width:14px;height:14px;"></i> Upload &amp; Import</button>
                             </div>
                             <div id="sysusersImportResult"></div>
                             <div id="sysusersListContainer"><p style="color:#888;">Loading...</p></div>
@@ -816,9 +859,9 @@
                             <div><label style="font-size:13px;color:#555;font-weight:600;margin-bottom:4px;display:block;">Select lookup table</label>
                                 <select id="lookupTableSelect" onchange="loadLookupTable(this.value)" style="padding:8px;min-width:220px;"></select>
                             </div>
-                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;" onclick="openAddLookupValue()">+ Add Entry</button></div>
-                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;background:#1565c0;" onclick="openImportLookup()">↑ Import Excel</button></div>
-                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;background:#6a1b9a;" onclick="exportLookupTable()">↓ Export Excel</button></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;" onclick="openAddLookupValue()"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add Entry</button></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;" onclick="openImportLookup()"><i data-lucide="upload" style="width:14px;height:14px;"></i> Import Excel</button></div>
+                            <div><button class="btn-submit" style="margin-top:0;width:auto;padding:9px 16px;" onclick="exportLookupTable()"><i data-lucide="download" style="width:14px;height:14px;"></i> Export Excel</button></div>
                         </div>
                         <div id="lookupTableStatus" class="status-box hidden"></div>
                         <table>
@@ -843,7 +886,7 @@
                             <p style="margin:0 0 16px;font-size:13px;color:#888;">Column headers are flexible — e.g. <em>Full Name</em>, <em>Company</em>, <em>Phone</em> all work.</p>
                             <input type="file" id="backlogImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
                             <br>
-                            <button class="btn-submit" onclick="importBacklogExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                            <button class="btn-submit" onclick="importBacklogExcel()" style="display:inline-block;width:auto;padding:12px 32px;"><i data-lucide="upload" style="width:14px;height:14px;"></i> Upload &amp; Import</button>
                         </div>
                         <div id="backlogImportResult"></div>
                     </div>
@@ -860,7 +903,7 @@
                             </p>
                             <input type="file" id="inductionImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
                             <br>
-                            <button class="btn-submit" onclick="importInductionExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                            <button class="btn-submit" onclick="importInductionExcel()" style="display:inline-block;width:auto;padding:12px 32px;"><i data-lucide="upload" style="width:14px;height:14px;"></i> Upload &amp; Import</button>
                         </div>
                         <div id="inductionImportResult"></div>
                         <div id="inductionListContainer"><p style="color:#888;">Loading...</p></div>
@@ -876,7 +919,7 @@
             <div class="card">
                 <div class="card-title">
                     Non Grata List
-                    <div class="card-title-actions"><button class="refresh-btn btn-action btn-view" onclick="switchView('nongrata')">⟳ Refresh</button></div>
+                    <div class="card-title-actions"><button class="refresh-btn btn-action btn-view" onclick="switchView('nongrata')"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button></div>
                 </div>
                 <div class="card-subtitle">Individuals flagged as non grata. Fields: full name, gender, nationality, ID type, ID number, date of birth.</div>
                 <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
@@ -885,7 +928,7 @@
                     </p>
                     <input type="file" id="nonGrataImportFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
                     <br>
-                    <button id="nonGrataImportBtn" class="btn-submit" onclick="importNonGrataExcel()" style="display:inline-block;width:auto;padding:12px 32px;">Upload &amp; Import</button>
+                    <button id="nonGrataImportBtn" class="btn-submit" onclick="importNonGrataExcel()" style="display:inline-block;width:auto;padding:12px 32px;"><i data-lucide="upload" style="width:14px;height:14px;"></i> Upload &amp; Import</button>
                 </div>
                 <div id="nonGrataImportResult"></div>
                 <div id="nonGrataListContainer"><p style="color:#888;">Loading...</p></div>
@@ -2639,13 +2682,6 @@
                         </td>`;
                     tbody.appendChild(tr);
                 });
-                const sel = document.getElementById('newUserRoleId');
-                sel.innerHTML = '';
-                allRolesCache.forEach(r => {
-                    const opt = document.createElement('option');
-                    opt.value = r.role_id; opt.textContent = r.role_name;
-                    sel.appendChild(opt);
-                });
             } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:red;text-align:center;">${escapeHtml(e.message)}</td></tr>`; }
         }
 
@@ -2698,34 +2734,6 @@
                 if (!r.ok) { const e = await r.json().catch(() => ({})); showAdminMsg(`Failed: ${e.detail || r.statusText}`, true); return; }
                 showAdminMsg(`User #${userId} deactivated.`);
                 await loadUsers(); await loadAdminUsers();
-            } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
-        }
-
-        async function createUser() {
-            const fullName = document.getElementById('newUserFullName').value.trim();
-            const username = document.getElementById('newUserUsername').value.trim();
-            const roleId   = parseInt(document.getElementById('newUserRoleId').value, 10);
-            if (!fullName || !username) { showAdminMsg('Full name and username required.', true); return; }
-            try {
-                const r = await api('/api/v1/admin/users', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ full_name: fullName, username, role_id: roleId, is_active: true })
-                });
-                const data = await r.json().catch(() => ({}));
-                if (!r.ok) { showAdminMsg(`Failed: ${data.detail || r.statusText}`, true); return; }
-                if (data.temporary_password) {
-                    showCredentialDialog(
-                        `User '${fullName}' created successfully.`,
-                        username,
-                        data.temporary_password,
-                        'They must change this password on first login.',
-                    );
-                } else {
-                    showAdminMsg(`User '${fullName}' created.`);
-                }
-                document.getElementById('newUserFullName').value = '';
-                document.getElementById('newUserUsername').value = '';
-                await loadUsers(); await loadAdminUsers(); await loadAdminGroups();
             } catch (e) { showAdminMsg(`Error: ${e.message}`, true); }
         }
 
@@ -3440,5 +3448,7 @@
             return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
     </script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>document.addEventListener('DOMContentLoaded', function() { if (typeof lucide !== 'undefined') lucide.createIcons(); });</script>
 </body>
 </html>
