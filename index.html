@@ -1540,7 +1540,7 @@
 
             if (active) {
                 ['idCopyUpload','insuranceUpload','insuranceExpiry','photoUpload',
-                 'legalAgreementUpload','legalAgreementExpiry'].forEach(id => {
+                 'legalAgreementUpload','legalAgreementExpiry','sponsorName'].forEach(id => {
                     document.getElementById(id).required = false;
                 });
             } else {
@@ -1548,6 +1548,7 @@
                 document.getElementById('photoUpload').required     = true;
                 document.getElementById('insuranceUpload').required = (formVariant === 'full');
                 document.getElementById('insuranceExpiry').required = (formVariant === 'full');
+                document.getElementById('sponsorName').required     = (formVariant === 'full');
                 handleSponsorChange();
             }
         }
