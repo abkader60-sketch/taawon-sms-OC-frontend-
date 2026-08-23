@@ -86,6 +86,7 @@
         .variant-banner.brief { background: #EFF6FF; color: var(--color-primary-blue); border: 1px solid #DBEAFE; }
         .variant-banner.full  { background: #F5F3FF; color: #7C3AED; border: 1px solid #EDE9FE; }
         .variant-banner.empty { background: #FAFAFA; color: var(--color-steel); border: 1px dashed #D1D5DB; }
+        .single-skip-note { font-size: 11px; color: var(--color-pending); font-style: italic; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--color-border); }
@@ -711,17 +712,19 @@
                             <span class="field-hint">Image or PDF. Page 1 is used as the preview photo.</span>
                         </div>
 
-                        <div class="form-grid" id="attachmentsGrid">
+                        <div class="form-grid">
                             <div class="form-group">
                                 <label>ID Copy *</label>
                                 <input type="file" id="idCopyUpload" accept="image/*,.pdf" required>
                                 <span class="field-hint">Required for all forms.</span>
+                                <span class="single-skip-note hidden">Skipped &mdash; included in the combined document above.</span>
                             </div>
 
                             <div class="form-group full-only">
                                 <label>Insurance Validity *</label>
                                 <input type="file" id="insuranceUpload" accept="image/*,.pdf">
                                 <span class="field-hint">Required for full form.</span>
+                                <span class="single-skip-note hidden">Skipped &mdash; included in the combined document above.</span>
                             </div>
 
                             <div class="form-group full-only">
@@ -734,6 +737,7 @@
                                 <label>Personal Photo *</label>
                                 <input type="file" id="photoUpload" accept="image/*" required>
                                 <span class="field-hint" style="font-weight:bold;">Photo size: 4 x 6 cm with white background.</span>
+                                <span class="single-skip-note hidden">Skipped &mdash; included in the combined document above.</span>
                             </div>
 
                             <div class="form-group full-only full-width" style="padding:12px 12px 4px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:4px;" id="legalDeclarationWrapper">
@@ -750,14 +754,13 @@
                                     <label style="font-size:12px;color:#555;font-weight:600;display:block;margin-bottom:4px;">Legal Agreement *</label>
                                     <input type="file" id="legalAgreementUpload" accept=".pdf,image/*">
                                     <span class="field-hint">Upload the Legal Agreement document.</span>
+                                    <span class="single-skip-note hidden">Skipped &mdash; included in the combined document above.</span>
                                     <label style="font-size:12px;color:#555;font-weight:600;display:block;margin-top:10px;margin-bottom:4px;">Legal Agreement Expiry Date *</label>
                                     <input type="date" id="legalAgreementExpiry" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;">
                                     <span class="field-hint">Required when a Legal Agreement is uploaded.</span>
                                 </div>
                             </div>
                         </div>
-
-                        <div id="singleAttachmentNote" style="display:none;font-size:11px;color:var(--color-pending);font-style:italic;">Skipped &mdash; included in the combined document above.</div>
                     </div>
 
                     <button type="button" class="btn-submit" onclick="doSubmitApplication()"><i data-lucide="send" style="width:16px;height:16px;"></i> Submit Application</button>
@@ -1523,8 +1526,6 @@
             const banner    = document.getElementById('singleAttachmentBanner');
             const comboWrap = document.getElementById('combinedAttachmentWrapper');
             const comboInp  = document.getElementById('combinedAttachmentUpload');
-            const grid      = document.getElementById('attachmentsGrid');
-            const note      = document.getElementById('singleAttachmentNote');
             const available = (formVariant === 'full');
             const active    = available && cb.checked;
             if (!available && cb.checked) cb.checked = false;
@@ -1534,21 +1535,30 @@
             comboWrap.style.display    = active ? 'block' : 'none';
             comboInp.required          = active;
             if (!active) comboInp.value = '';
-            grid.style.opacity         = active ? '0.4' : '1';
-            grid.style.pointerEvents   = active ? 'none' : 'auto';
-            note.style.display         = active ? 'block' : 'none';
+
+            // Dim + disable ONLY the replaced FILE uploads. Non-file fields
+            // (insuranceExpiry, sponsorIsThirdParty, sponsorName,
+            // legalAgreementExpiry) stay fully interactive.
+            ['idCopyUpload','insuranceUpload','photoUpload','legalAgreementUpload'].forEach(id => {
+                const inp = document.getElementById(id);
+                inp.disabled = active;
+                inp.style.opacity = active ? '0.4' : '';
+            });
+            // Dim the whole cell (label + Browse + hint) for the three main uploads;
+            // the legal upload cell stays active since it also holds live sponsor fields.
+            ['idCopyUpload','insuranceUpload','photoUpload'].forEach(id => {
+                document.getElementById(id).closest('.form-group').style.opacity = active ? '0.4' : '';
+            });
+            document.querySelectorAll('.single-skip-note').forEach(n => n.classList.toggle('hidden', !active));
 
             if (active) {
-                ['idCopyUpload','insuranceUpload','insuranceExpiry','photoUpload',
-                 'legalAgreementUpload','legalAgreementExpiry','sponsorName'].forEach(id => {
+                ['idCopyUpload','insuranceUpload','photoUpload','legalAgreementUpload'].forEach(id => {
                     document.getElementById(id).required = false;
                 });
             } else {
                 document.getElementById('idCopyUpload').required    = true;
                 document.getElementById('photoUpload').required     = true;
                 document.getElementById('insuranceUpload').required = (formVariant === 'full');
-                document.getElementById('insuranceExpiry').required = (formVariant === 'full');
-                document.getElementById('sponsorName').required     = (formVariant === 'full');
                 handleSponsorChange();
             }
         }
@@ -1578,10 +1588,11 @@
 
         function handleSponsorChange() {
             const isThirdParty = document.getElementById('sponsorIsThirdParty').checked;
+            const singleActive = document.getElementById('singleAttachmentMode').checked;
             const below = document.getElementById('legalAgreementBelow');
             const upload  = document.getElementById('legalAgreementUpload');
             const expiry = document.getElementById('legalAgreementExpiry');
-            if (isThirdParty) { below.style.display = 'block'; upload.required = true; expiry.required = true; }
+            if (isThirdParty) { below.style.display = 'block'; upload.required = !singleActive; expiry.required = true; }
             else { below.style.display = 'none'; upload.required = false; upload.value = ""; expiry.required = false; expiry.value = ""; }
         }
 
