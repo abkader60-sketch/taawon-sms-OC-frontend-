@@ -1,35 +1,47 @@
 # Custom Caddyfile — overrides Railpack's generated static-site config.
-# Mirrors Railpack's default template (security headers, gzip/zstd, hidden
+# Mirrors Railpack's default behavior (security headers, gzip/zstd, hidden
 # dotfiles) and additionally returns 404 for internal docs that must never
-# be publicly served. See https://railpack.com/languages/staticfile/
+# be publicly served.
+#
+# NOTE: the doc-block rules MUST use `handle` (mutually-exclusive groups,
+# evaluated first). A plain `respond @docs 404` placed before file_server is
+# silently bypassed because try_files' rewrite runs earlier in the pipeline.
+# See https://railpack.com/languages/staticfile/
 {
 	auto_https off
 }
 
 :{$PORT:80} {
-	@private_docs path /AGENTS.md /HANDBOOK.md /DESIGN_PARAMETERS.md /ROADMAP.md
-	respond @private_docs 404
-
-	# Security headers (matches Railpack's defaults)
-	header {
-		X-XSS-Protection "1; mode=block"
-		X-Content-Type-Options "nosniff"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		Content-Security-Policy "default-src 'self'; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' https: *; script-src 'self' 'unsafe-inline' https: *; font-src 'self' data: https: *; connect-src 'self' https: *; media-src 'self' https: *; object-src 'none'; frame-src 'self' https: *;"
-		-Server
+	handle /AGENTS.md {
+		respond 404
+	}
+	handle /HANDBOOK.md {
+		respond 404
+	}
+	handle /DESIGN_PARAMETERS.md {
+		respond 404
+	}
+	handle /ROADMAP.md {
+		respond 404
 	}
 
-	root * .
-
-	file_server {
-		hide .git
-		hide .env*
+	handle {
+		header {
+			X-XSS-Protection "1; mode=block"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "strict-origin-when-cross-origin"
+			Content-Security-Policy "default-src 'self'; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' https: *; script-src 'self' 'unsafe-inline' https: *; font-src 'self' data: https: *; connect-src 'self' https: *; media-src 'self' https: *; object-src 'none'; frame-src 'self' https: *;"
+			-Server
+		}
+		root * .
+		file_server {
+			hide .git
+			hide .env*
+		}
+		encode {
+			gzip
+			zstd
+		}
+		try_files {path} {path}.html {path}/index.html
 	}
-
-	encode {
-		gzip
-		zstd
-	}
-
-	try_files {path} {path}.html {path}/index.html
 }
