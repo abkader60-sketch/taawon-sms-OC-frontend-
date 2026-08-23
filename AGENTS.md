@@ -12,7 +12,9 @@
 
 ## Railway URLs
 - Backend: `https://securitysms-production.up.railway.app`
-- Frontend: `https://taawon-sms-frontend-production.up.railway.app`
+- Frontend: `https://taawon-sms-oc-frontend-production.up.railway.app`
+
+> **Note (2026-08-23):** The old domain `https://taawon-sms-frontend-production.up.railway.app` still resolves but is no longer in active use — backend `CORS_ORIGINS` only allows the `-oc-` domain, so browsers on the old domain get "Failed to fetch".
 
 ## Seeded Users (initial password: `ChangeMe123!`)
 - `omar.almaqhawi` — Administrator (full access, `manage_system_settings`)

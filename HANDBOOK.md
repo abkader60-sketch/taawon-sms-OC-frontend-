@@ -7,9 +7,11 @@
 | **Backend GitHub** | `https://github.com/abkader60-sketch/taawon-sms-OC-backend.git` |
 | **Frontend GitHub** | `https://github.com/abkader60-sketch/taawon-sms-OC-frontend-.git` |
 | **Backend (Railway)** | `https://securitysms-production.up.railway.app` |
-| **Frontend (Railway)** | `https://taawon-sms-frontend-production.up.railway.app` |
+| **Frontend (Railway)** | `https://taawon-sms-oc-frontend-production.up.railway.app` |
 | **Backend Health** | `https://securitysms-production.up.railway.app/` |
 | **FastAPI docs** | `https://securitysms-production.up.railway.app/docs` |
+
+> **Note (2026-08-23):** The old frontend domain `https://taawon-sms-frontend-production.up.railway.app` still resolves but is no longer the one in active use — the backend's `CORS_ORIGINS` only allows the `-oc-` domain above, so browsers on the old domain cannot call the API.
 
 > The Railway projects are owned by the account that deployed them. Transfer ownership via Railway dashboard → Project Settings → Transfer.
 
