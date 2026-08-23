@@ -44,9 +44,9 @@ Set these on Railway backend service. Local dev copies are in `backend/.env`:
 | `MINIO_BUCKET` | `attachments` |
 
 **Credentials (local `.env` file):**
-- DB Password: <rotated — see password manager> (local dev only)
-- SMTP Gmail: `abkader60@gmail.com` / app password: <rotated — see password manager>
-- Seeded default password (all users): <rotated — see password manager>
+- DB Password: `Omar123` (local dev only)
+- SMTP Gmail: `abkader60@gmail.com` / app password: `zdosgtburpeddeih`
+- Seeded default password (all users): `ChangeMe123!`
 
 ## Seeded Staff Accounts
 
@@ -57,7 +57,7 @@ Set these on Railway backend service. Local dev copies are in `backend/.env`:
 | Hind Mana Alahmari | `hind.alahmari` | Reviewer | Read-only access |
 | Badriah Rizq Allah | `badriah.rizqallah` | Submitter | Can only submit applications |
 
-All users require password change on first login. Initial password: <rotated — see password manager>
+All users require password change on first login. Initial password: `ChangeMe123!`
 
 ## Local Development Setup
 
