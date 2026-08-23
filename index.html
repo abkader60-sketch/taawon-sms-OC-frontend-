@@ -696,7 +696,22 @@
                     <!-- ============== 5. ATTACHMENTS ============== -->
                     <div class="card">
                         <div class="card-title">5. Attachments</div>
-                        <div class="form-grid">
+
+                        <div id="singleAttachmentBanner" class="variant-banner brief" style="cursor:pointer;display:flex;align-items:flex-start;gap:10px;" onclick="toggleSingleAttachment()">
+                            <input type="checkbox" id="singleAttachmentMode" style="width:16px;height:16px;accent-color:var(--color-primary-blue);margin-top:2px;flex-shrink:0;" onclick="event.stopPropagation();" onchange="applySingleAttachmentMode()">
+                            <div>
+                                <div style="font-size:13px;font-weight:600;">Combine attachments into a single file</div>
+                                <div style="font-size:11px;color:var(--color-steel);margin-top:3px;font-style:italic;">ID Copy, Insurance, Personal Photo, and Legal Agreement in one upload.</div>
+                            </div>
+                        </div>
+
+                        <div id="combinedAttachmentWrapper" style="display:none;margin-bottom:14px;">
+                            <label>Combined document *</label>
+                            <input type="file" id="combinedAttachmentUpload" accept="image/*,.pdf">
+                            <span class="field-hint">Image or PDF. Page 1 is used as the preview photo.</span>
+                        </div>
+
+                        <div class="form-grid" id="attachmentsGrid">
                             <div class="form-group">
                                 <label>ID Copy *</label>
                                 <input type="file" id="idCopyUpload" accept="image/*,.pdf" required>
@@ -741,6 +756,8 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div id="singleAttachmentNote" style="display:none;font-size:11px;color:var(--color-pending);font-style:italic;">Skipped &mdash; included in the combined document above.</div>
                     </div>
 
                     <button type="button" class="btn-submit" onclick="doSubmitApplication()"><i data-lucide="send" style="width:16px;height:16px;"></i> Submit Application</button>
@@ -1492,6 +1509,47 @@
                 setRequiredAttribute('.full-only', false);
                 setRequiredAttribute('.brief-only', false);
             }
+            applySingleAttachmentMode();
+        }
+
+        function toggleSingleAttachment() {
+            const cb = document.getElementById('singleAttachmentMode');
+            cb.checked = !cb.checked;
+            applySingleAttachmentMode();
+        }
+
+        function applySingleAttachmentMode() {
+            const cb        = document.getElementById('singleAttachmentMode');
+            const banner    = document.getElementById('singleAttachmentBanner');
+            const comboWrap = document.getElementById('combinedAttachmentWrapper');
+            const comboInp  = document.getElementById('combinedAttachmentUpload');
+            const grid      = document.getElementById('attachmentsGrid');
+            const note      = document.getElementById('singleAttachmentNote');
+            const available = (formVariant === 'full');
+            const active    = available && cb.checked;
+            if (!available && cb.checked) cb.checked = false;
+
+            banner.style.display       = available ? 'flex' : 'none';
+            banner.className           = active ? 'variant-banner full' : 'variant-banner brief';
+            comboWrap.style.display    = active ? 'block' : 'none';
+            comboInp.required          = active;
+            if (!active) comboInp.value = '';
+            grid.style.opacity         = active ? '0.4' : '1';
+            grid.style.pointerEvents   = active ? 'none' : 'auto';
+            note.style.display         = active ? 'block' : 'none';
+
+            if (active) {
+                ['idCopyUpload','insuranceUpload','insuranceExpiry','photoUpload',
+                 'legalAgreementUpload','legalAgreementExpiry'].forEach(id => {
+                    document.getElementById(id).required = false;
+                });
+            } else {
+                document.getElementById('idCopyUpload').required    = true;
+                document.getElementById('photoUpload').required     = true;
+                document.getElementById('insuranceUpload').required = (formVariant === 'full');
+                document.getElementById('insuranceExpiry').required = (formVariant === 'full');
+                handleSponsorChange();
+            }
         }
 
         function setRequiredAttribute(selector, required) {
@@ -1602,10 +1660,16 @@
             const insFile   = document.getElementById('insuranceUpload').files[0];
             const photoFile = document.getElementById('photoUpload').files[0];
             const legalFile = document.getElementById('legalAgreementUpload').files[0];
-            if (idFile)    fd.append('id_copy', idFile);
-            if (photoFile) fd.append('photo', photoFile);
-            if (formVariant === 'full' && insFile)   fd.append('insurance', insFile);
-            if (formVariant === 'full' && legalFile) fd.append('legal_agreement', legalFile);
+            const singleMode = formVariant === 'full' && document.getElementById('singleAttachmentMode').checked;
+            if (singleMode) {
+                const combinedFile = document.getElementById('combinedAttachmentUpload').files[0];
+                if (combinedFile) fd.append('combined_document', combinedFile);
+            } else {
+                if (idFile)    fd.append('id_copy', idFile);
+                if (photoFile) fd.append('photo', photoFile);
+                if (formVariant === 'full' && insFile)   fd.append('insurance', insFile);
+                if (formVariant === 'full' && legalFile) fd.append('legal_agreement', legalFile);
+            }
 
             try {
                 const response = await api('/api/v1/applications/submit', { method: 'POST', body: fd });
@@ -2213,7 +2277,7 @@
         }
 
         function prettyAttachmentType(t) {
-            return ({ id_copy: 'ID Copy', insurance: 'Insurance', photo: 'Personal Photo', legal_agreement: 'Legal Agreement' })[t] || t;
+            return ({ id_copy: 'ID Copy', insurance: 'Insurance', photo: 'Personal Photo', legal_agreement: 'Legal Agreement', combined_document: 'Combined Document' })[t] || t;
         }
 
         function closeModal() {
