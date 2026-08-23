@@ -16,12 +16,12 @@
 
 > **Note (2026-08-23):** The old domain `https://taawon-sms-frontend-production.up.railway.app` still resolves but is no longer in active use — backend `CORS_ORIGINS` only allows the `-oc-` domain, so browsers on the old domain get "Failed to fetch".
 
-## Seeded Users (initial password: `ChangeMe123!`)
+## Seeded Users (initial password: <rotated — see password manager>)
 - `omar.almaqhawi` — Administrator (full access, `manage_system_settings`)
 - `abdulkader.abdullatif` — Security Clearance (approve/reject, view all, edit)
 - `hind.alahmari` — Reviewer (read-only)
 - `badriah.rizqallah` — Submitter (submit only)
-- `omar.almaqhawi`'s password set to `@Khobar123` (no forced change)
+- `omar.almaqhawi`'s password set to <rotated — see password manager> (no forced change)
 - All others force password change on first login
 
 ## Frontend API URL
