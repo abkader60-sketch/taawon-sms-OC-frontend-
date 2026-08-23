@@ -1,0 +1,35 @@
+# Custom Caddyfile — overrides Railpack's generated static-site config.
+# Mirrors Railpack's default template (security headers, gzip/zstd, hidden
+# dotfiles) and additionally returns 404 for internal docs that must never
+# be publicly served. See https://railpack.com/languages/staticfile/
+{
+	auto_https off
+}
+
+:{$PORT:80} {
+	@private_docs path /AGENTS.md /HANDBOOK.md /DESIGN_PARAMETERS.md /ROADMAP.md
+	respond @private_docs 404
+
+	# Security headers (matches Railpack's defaults)
+	header {
+		X-XSS-Protection "1; mode=block"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' https: *; script-src 'self' 'unsafe-inline' https: *; font-src 'self' data: https: *; connect-src 'self' https: *; media-src 'self' https: *; object-src 'none'; frame-src 'self' https: *;"
+		-Server
+	}
+
+	root * .
+
+	file_server {
+		hide .git
+		hide .env*
+	}
+
+	encode {
+		gzip
+		zstd
+	}
+
+	try_files {path} {path}.html {path}/index.html
+}

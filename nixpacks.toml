@@ -1,4 +1,0 @@
-# Keep internal docs out of the deployed (publicly served) image.
-# Files remain in git for local reference; they are just not shipped.
-[phases.build]
-cmd = "rm -f AGENTS.md HANDBOOK.md DESIGN_PARAMETERS.md ROADMAP.md"
