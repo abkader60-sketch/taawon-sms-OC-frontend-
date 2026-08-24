@@ -121,6 +121,9 @@
         .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .refresh-btn { background-color: var(--color-surface); border: 1px solid var(--color-border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--color-primary-navy); display: inline-flex; align-items: center; gap: 6px; }
         .refresh-btn:hover { background-color: #F8FAFC; }
+        .refresh-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .pager-bar { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 
         .app-id-link { color: var(--color-primary-blue); text-decoration: none; font-family: var(--font-mono); font-weight: 500; cursor: pointer; }
         .app-id-link:hover { text-decoration: underline; }
@@ -407,6 +410,19 @@
                         </thead>
                         <tbody id="applicationsTableBody"><tr><td colspan="6" style="text-align: center; color: #888;">Loading...</td></tr></tbody>
                     </table>
+                    <div class="pager-bar">
+                        <label style="font-size:13px;color:#555;display:flex;align-items:center;gap:6px;">Rows per page
+                            <select id="pendingPageSize" onchange="changePendingPageSize()" style="padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;background:#fff;">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </label>
+                        <button class="refresh-btn" id="pendingPrevBtn" onclick="changePendingPage(-1)">&#8249; Prev</button>
+                        <span id="pendingPageInfo" style="font-size:13px;color:#555;">Showing 0 of 0</span>
+                        <button class="refresh-btn" id="pendingNextBtn" onclick="changePendingPage(1)">Next &#8250;</button>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -438,7 +454,7 @@
                     </div>
                     <div class="card-subtitle">Includes approved, rejected, and pending. Click any App ID or View button to see full details.</div>
                     <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-                        <input type="text" id="appSearch" placeholder="Search by name, org, ID..." oninput="filterApplications()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+                        <input type="text" id="appSearch" placeholder="Search by name, org, ID..." oninput="onAppSearchInput()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
                         <select id="appStatusFilter" onchange="filterApplications()" style="padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;background:#fff;">
                             <option value="">All Statuses</option>
                             <option value="Pending">Pending</option>
@@ -455,6 +471,19 @@
                             </thead>
                             <tbody id="allApplicationsTableBody"><tr><td colspan="6" style="text-align: center; color: #888;">Loading...</td></tr></tbody>
                         </table>
+                    </div>
+                    <div class="pager-bar">
+                        <label style="font-size:13px;color:#555;display:flex;align-items:center;gap:6px;">Rows per page
+                            <select id="appPageSize" onchange="changeAppPageSize()" style="padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;background:#fff;">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </label>
+                        <button class="refresh-btn" id="appPrevBtn" onclick="changeAppPage(-1)">&#8249; Prev</button>
+                        <span id="appPageInfo" style="font-size:13px;color:#555;">Showing 0 of 0</span>
+                        <button class="refresh-btn" id="appNextBtn" onclick="changeAppPage(1)">Next &#8250;</button>
                     </div>
                 </div>
 
@@ -1709,8 +1738,52 @@
         }
 
         // ==============================================
-        // DASHBOARD (unchanged from v0.5)
+        // DASHBOARD
         // ==============================================
+        const pendingPager = { page: 1, pageSize: 10, total: 0 };
+        const appPager = { page: 1, pageSize: 10, total: 0 };
+
+        function renderPager(state, prefix) {
+            const info = document.getElementById(prefix + 'PageInfo');
+            const prevBtn = document.getElementById(prefix + 'PrevBtn');
+            const nextBtn = document.getElementById(prefix + 'NextBtn');
+            if (!info || !prevBtn || !nextBtn) return;
+            if (!state.total || state.total <= 0) {
+                info.textContent = 'Showing 0 of 0';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                return;
+            }
+            const totalPages = Math.ceil(state.total / state.pageSize);
+            const start = (state.page - 1) * state.pageSize + 1;
+            const end = Math.min(state.page * state.pageSize, state.total);
+            info.textContent = `Showing ${start}\u2013${end} of ${state.total}`;
+            prevBtn.disabled = state.page <= 1;
+            nextBtn.disabled = state.page >= totalPages;
+        }
+
+        function changePendingPageSize() {
+            pendingPager.pageSize = parseInt(document.getElementById('pendingPageSize').value, 10) || 10;
+            pendingPager.page = 1;
+            fetchPendingApplications();
+        }
+
+        function changePendingPage(delta) {
+            pendingPager.page += delta;
+            fetchPendingApplications();
+        }
+
+        function changeAppPageSize() {
+            appPager.pageSize = parseInt(document.getElementById('appPageSize').value, 10) || 10;
+            appPager.page = 1;
+            fetchAllApplications();
+        }
+
+        function changeAppPage(delta) {
+            appPager.page += delta;
+            fetchAllApplications();
+        }
+
         async function fetchAllData() {
             await loadWorkflowMode();
             renderAllApplicationsHeaders();
@@ -1723,10 +1796,17 @@
         async function fetchPendingApplications() {
             const tableBody = document.getElementById('applicationsTableBody');
             try {
-                const response = await api('/api/v1/applications/pending');
+                const qs = new URLSearchParams({ page: pendingPager.page, page_size: pendingPager.pageSize });
+                const response = await api('/api/v1/applications/pending?' + qs.toString());
                 if (!response.ok) throw new Error('Backend error');
                 const data = await response.json();
+                pendingPager.total = data.total || 0;
+                if ((!data.pending_applications || data.pending_applications.length === 0) && pendingPager.page > 1) {
+                    pendingPager.page--;
+                    return fetchPendingApplications();
+                }
                 tableBody.innerHTML = '';
+                renderPager(pendingPager, 'pending');
                 if (!data.pending_applications || data.pending_applications.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888;">No pending applications require your attention.</td></tr>`;
                     return;
@@ -1775,27 +1855,29 @@
             }
         }
 
+        let appSearchTimer = null;
+        function onAppSearchInput() {
+            clearTimeout(appSearchTimer);
+            appSearchTimer = setTimeout(filterApplications, 300);
+        }
+
         function filterApplications() {
             const q = document.getElementById('appSearch').value.trim();
             const statusFilter = document.getElementById('appStatusFilter').value;
             // Use server-side filtering — pass both search and status as query params
+            appPager.page = 1;
             fetchFilteredApplications(statusFilter, q);
         }
 
         async function updateStatCards() {
             try {
-                const r = await api('/api/v1/applications');
+                const r = await api('/api/v1/applications/stats');
                 if (!r.ok) return;
-                const data = await r.json();
-                const list = data.applications || [];
-                const total = list.length;
-                const pending = list.filter(a => a.workflow_state !== 'Approved' && a.workflow_state !== 'Rejected').length;
-                const approved = list.filter(a => a.workflow_state === 'Approved').length;
-                const rejected = list.filter(a => a.workflow_state === 'Rejected').length;
-                document.getElementById('statTotal').textContent = total;
-                document.getElementById('statPending').textContent = pending;
-                document.getElementById('statApproved').textContent = approved;
-                document.getElementById('statRejected').textContent = rejected;
+                const s = await r.json();
+                document.getElementById('statTotal').textContent = s.total || 0;
+                document.getElementById('statPending').textContent = s.pending || 0;
+                document.getElementById('statApproved').textContent = s.approved || 0;
+                document.getElementById('statRejected').textContent = s.rejected || 0;
             } catch (e) { /* stats silently fail */ }
         }
 
@@ -1837,15 +1919,24 @@
             const tableBody = document.getElementById('allApplicationsTableBody');
             const colCount = displayedColumns.length + 1;
             try {
-                const params = new URLSearchParams();
+                const params = new URLSearchParams({
+                    page: appPager.page,
+                    page_size: appPager.pageSize,
+                });
                 if (status) params.set('status', status);
                 if (search) params.set('search', search);
-                const qs = params.toString();
-                const url = '/api/v1/applications' + (qs ? '?' + qs : '');
+                const url = '/api/v1/applications?' + params.toString();
                 const response = await api(url);
                 if (!response.ok) throw new Error('Backend error');
                 const data = await response.json();
+                appPager.total = data.total || 0;
                 const apps = data.applications || [];
+                if (apps.length === 0 && appPager.page > 1) {
+                    appPager.page--;
+                    return fetchFilteredApplications(status, search);
+                }
+                tableBody.innerHTML = '';
+                renderPager(appPager, 'app');
                 if (apps.length === 0 && !status && !search) {
                     tableBody.innerHTML = `<tr><td colspan="${colCount}" style="text-align: center; color: #888;">No applications yet.</td></tr>`;
                     return;
