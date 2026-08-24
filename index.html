@@ -3340,8 +3340,6 @@
         // ATTACHMENT PREVIEW (v0.9)
         // ==============================================
         async function previewAttachment(applicationId, attachmentId, filename, mimeType) {
-            const isImage = mimeType && mimeType.startsWith('image/');
-            const isPdf = mimeType && mimeType === 'application/pdf';
             const downloadUrl = `${API_BASE}/api/v1/applications/${applicationId}/attachment/${attachmentId}`;
 
             const modalHtml = `
@@ -3377,6 +3375,12 @@
                     return;
                 }
                 const blob = await r.blob();
+                // Decide rendering from the ACTUAL response Content-Type, not the
+                // DB-stored mime_type: combined_document PDFs come back as image/png
+                // (page-1 preview rendered server-side) and must use the <img> path.
+                const contentType = (r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+                const isImage = contentType.startsWith('image/');
+                const isPdf = contentType === 'application/pdf';
                 const dataUrl = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
