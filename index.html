@@ -731,7 +731,7 @@
                             <input type="checkbox" id="singleAttachmentMode" style="width:16px;height:16px;accent-color:var(--color-primary-blue);margin-top:2px;flex-shrink:0;" onclick="event.stopPropagation();" onchange="applySingleAttachmentMode()">
                             <div>
                                 <div style="font-size:13px;font-weight:600;">Combine attachments into a single file</div>
-                                <div style="font-size:11px;color:var(--color-steel);margin-top:3px;font-style:italic;">ID Copy, Insurance, Personal Photo, and Legal Agreement in one upload.</div>
+                                <div style="font-size:11px;color:var(--color-steel);margin-top:3px;font-style:italic;">ID Copy, Insurance, and Legal Agreement in one upload. Personal Photo is always uploaded separately.</div>
                             </div>
                         </div>
 
@@ -766,7 +766,6 @@
                                 <label>Personal Photo *</label>
                                 <input type="file" id="photoUpload" accept="image/*" required>
                                 <span class="field-hint" style="font-weight:bold;">Photo size: 4 x 6 cm with white background.</span>
-                                <span class="single-skip-note hidden">Skipped &mdash; included in the combined document above.</span>
                             </div>
 
                             <div class="form-group full-only full-width" style="padding:12px 12px 4px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:4px;" id="legalDeclarationWrapper">
@@ -1565,25 +1564,27 @@
             comboInp.required          = active;
             if (!active) comboInp.value = '';
 
-            // Dim + disable ONLY the replaced FILE uploads. Non-file fields
-            // (insuranceExpiry, sponsorIsThirdParty, sponsorName,
-            // legalAgreementExpiry) stay fully interactive.
-            ['idCopyUpload','insuranceUpload','photoUpload','legalAgreementUpload'].forEach(id => {
+            // Dim + disable ONLY the replaced FILE uploads. Personal Photo is
+            // ALWAYS a separate mandatory upload - never dimmed/disabled here.
+            // Non-file fields (insuranceExpiry, sponsorIsThirdParty, sponsorName,
+            // legalAgreementExpiry) also stay fully interactive.
+            ['idCopyUpload','insuranceUpload','legalAgreementUpload'].forEach(id => {
                 const inp = document.getElementById(id);
                 inp.disabled = active;
                 inp.style.opacity = active ? '0.4' : '';
             });
-            // Dim the whole cell (label + Browse + hint) for the three main uploads;
+            // Dim the whole cell (label + Browse + hint) for ID Copy / Insurance;
             // the legal upload cell stays active since it also holds live sponsor fields.
-            ['idCopyUpload','insuranceUpload','photoUpload'].forEach(id => {
+            ['idCopyUpload','insuranceUpload'].forEach(id => {
                 document.getElementById(id).closest('.form-group').style.opacity = active ? '0.4' : '';
             });
             document.querySelectorAll('.single-skip-note').forEach(n => n.classList.toggle('hidden', !active));
 
             if (active) {
-                ['idCopyUpload','insuranceUpload','photoUpload','legalAgreementUpload'].forEach(id => {
+                ['idCopyUpload','insuranceUpload','legalAgreementUpload'].forEach(id => {
                     document.getElementById(id).required = false;
                 });
+                document.getElementById('photoUpload').required = true;
             } else {
                 document.getElementById('idCopyUpload').required    = true;
                 document.getElementById('photoUpload').required     = true;
@@ -1702,12 +1703,12 @@
             const photoFile = document.getElementById('photoUpload').files[0];
             const legalFile = document.getElementById('legalAgreementUpload').files[0];
             const singleMode = formVariant === 'full' && document.getElementById('singleAttachmentMode').checked;
+            if (photoFile) fd.append('photo', photoFile);
             if (singleMode) {
                 const combinedFile = document.getElementById('combinedAttachmentUpload').files[0];
                 if (combinedFile) fd.append('combined_document', combinedFile);
             } else {
                 if (idFile)    fd.append('id_copy', idFile);
-                if (photoFile) fd.append('photo', photoFile);
                 if (formVariant === 'full' && insFile)   fd.append('insurance', insFile);
                 if (formVariant === 'full' && legalFile) fd.append('legal_agreement', legalFile);
             }
