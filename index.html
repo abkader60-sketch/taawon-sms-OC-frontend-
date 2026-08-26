@@ -289,7 +289,20 @@
             .sidebar { min-width: 56px; }
             .card { padding: 16px; }
         }
-    </style>
+            /* Per-column filter UI (All Applications) */
+        .col-filter-btn{background:none;border:none;cursor:pointer;padding:0 0 0 4px;color:#999;vertical-align:middle;line-height:1;}
+        .col-filter-btn:hover{color:#00A651;}
+        .col-filter-btn.active{color:#00A651;}
+        th.col-filter-active{background:rgba(0,165,81,0.08);}
+        #colFilterPop{position:absolute;z-index:4000;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,0.18);padding:10px;display:none;min-width:200px;}
+        #colFilterPop .cf-title{font-size:12px;font-weight:600;color:#555;margin-bottom:8px;word-break:break-word;}
+        #colFilterPop .cf-row{margin-bottom:6px;}
+        #colFilterPop input,#colFilterPop select{width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;background:#fff;}
+        #colFilterPop .cf-range{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+        #colFilterPop .cf-range span{font-size:11px;color:#888;width:32px;flex-shrink:0;}
+        #colFilterPop .cf-actions{display:flex;justify-content:flex-end;margin-top:2px;}
+        #colFilterPop .cf-clear{background:none;border:none;color:#c62828;font-size:12px;cursor:pointer;padding:2px 4px;}
+</style>
 </head>
 <body>
 
@@ -462,6 +475,7 @@
                             <option value="Approved">Approved</option>
                             <option value="Rejected">Rejected</option>
                         </select>
+                        <button id="clearAppFilters" class="btn-action btn-view hidden" onclick="clearAllAppFilters()" style="white-space:nowrap;padding:8px 14px;font-size:13px;">Clear filters</button>
                         <button class="btn-action btn-view" onclick="openColumnSelector()" style="white-space:nowrap;padding:8px 14px;font-size:13px;"><i data-lucide="columns" style="width:14px;height:14px;"></i> Columns</button>
                     </div>
                     <div style="overflow-x: auto; max-width: 100%;">
@@ -1867,6 +1881,7 @@
             const statusFilter = document.getElementById('appStatusFilter').value;
             // Use server-side filtering — pass both search and status as query params
             appPager.page = 1;
+            updateClearFiltersVisibility();
             fetchFilteredApplications(statusFilter, q);
         }
 
@@ -1882,13 +1897,159 @@
             } catch (e) { /* stats silently fail */ }
         }
 
+        // ===== Per-column filters (All Applications) =====
+        const COL_FILTER_TEXT = ['full_name','organization','subcontractor','gov_id_number','nationality','mobile_number','email','employee_number','job_title','whatsapp_number','passport_number','reports_to','sponsor_name','submitter_name'];
+        const COL_FILTER_SELECT = {
+            workflow_state: ['', 'Pending', 'Pending HR Verification', 'Pending Security Clearance', 'Approved', 'Rejected'],
+            gov_id_type: ['', 'Saudi National ID', 'Iqama', 'Passport'],
+            gender: ['', 'Male', 'Female'],
+            blood_type: ['', 'O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'Unknown'],
+            language: ['', 'Arabic', 'English', 'Hindi', 'Urdu', 'Tagalog', 'Bengali', 'Nepali', 'Other'],
+            form_variant: ['', 'brief', 'full'],
+            workflow_type: ['', 'security_only', 'standard'],
+            is_third_party_sponsor: ['', 'Yes', 'No'],
+        };
+        const COL_FILTER_DATE = ['created_at','date_of_birth','iqama_expiry_date','passport_expiry_date','insurance_expiry_date','legal_agreement_expiry_date','date_joined','safety_induction_date'];
+        let columnFilters = {};   // key -> string (text/select) or {from,to} (date)
+        let colFilterTimer = null;
+        let colFilterOpenKey = null;
+
+        function colFilterType(key) {
+            if (COL_FILTER_TEXT.includes(key)) return 'text';
+            if (COL_FILTER_DATE.includes(key)) return 'date';
+            if (COL_FILTER_SELECT[key]) return 'select';
+            return null; // not filterable (e.g. application_id action column)
+        }
+
+        function isColFilterActive(key) {
+            const v = columnFilters[key];
+            if (!v) return false;
+            if (typeof v === 'object') return !!(v.from || v.to);
+            return String(v).length > 0;
+        }
+
+        function anyFilterActive() {
+            if (Object.keys(columnFilters).some(isColFilterActive)) return true;
+            const s = document.getElementById('appStatusFilter');
+            const q = document.getElementById('appSearch');
+            return !!(s && s.value) || !!(q && q.value.trim());
+        }
+
+        function updateClearFiltersVisibility() {
+            const btn = document.getElementById('clearAppFilters');
+            if (btn) btn.classList.toggle('hidden', !anyFilterActive());
+        }
+
+        function clearAllAppFilters() {
+            columnFilters = {};
+            const s = document.getElementById('appStatusFilter');
+            const q = document.getElementById('appSearch');
+            if (s) s.value = '';
+            if (q) q.value = '';
+            closeColumnFilterPop();
+            renderAllApplicationsHeaders();
+            filterApplications();
+        }
+
+        function serializeColumnFilters(params) {
+            Object.entries(columnFilters).forEach(([key, v]) => {
+                const type = colFilterType(key);
+                if (type === 'text' && typeof v === 'string' && v.trim()) params.set('filter_' + key, v.trim());
+                else if (type === 'select' && v) params.set('filter_' + key, v);
+                else if (type === 'date' && v && typeof v === 'object') {
+                    if (v.from) params.set('filter_' + key + '_from', v.from);
+                    if (v.to) params.set('filter_' + key + '_to', v.to);
+                }
+            });
+        }
+
+        function applyColumnFilters() {
+            appPager.page = 1;
+            renderAllApplicationsHeaders();
+            updateClearFiltersVisibility();
+            const q = document.getElementById('appSearch').value.trim();
+            const statusFilter = document.getElementById('appStatusFilter').value;
+            fetchFilteredApplications(statusFilter, q);
+        }
+
+        function onColumnFilterInput(key, value) {
+            clearTimeout(colFilterTimer);
+            colFilterTimer = setTimeout(() => {
+                if (value.trim()) columnFilters[key] = value; else delete columnFilters[key];
+                applyColumnFilters();
+            }, 300);
+        }
+
+        function onColumnFilterSelect(key, value) {
+            if (value) columnFilters[key] = value; else delete columnFilters[key];
+            applyColumnFilters();
+        }
+
+        function onColumnFilterDate(key, which, value) {
+            const cur = (columnFilters[key] && typeof columnFilters[key] === 'object') ? columnFilters[key] : {};
+            cur[which] = value;
+            if (!cur.from && !cur.to) delete columnFilters[key]; else columnFilters[key] = cur;
+            applyColumnFilters();
+        }
+
+        function funnelSVG() {
+            return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>';
+        }
+
+        function toggleColumnFilter(ev, key) {
+            ev.stopPropagation();
+            const pop = document.getElementById('colFilterPop');
+            if (!pop) return;
+            if (colFilterOpenKey === key) { closeColumnFilterPop(); return; }
+            colFilterOpenKey = key;
+            const label = (ALL_COLUMNS.find(c => c.key === key) || {}).label || key;
+            const type = colFilterType(key);
+            let inner = `<div class="cf-title">${escapeHtml(label)}</div>`;
+            const cur = columnFilters[key];
+            if (type === 'text') {
+                const val = typeof cur === 'string' ? escapeHtml(cur) : '';
+                inner += `<div class="cf-row"><input type="text" placeholder="Contains..." value="${val}" oninput="onColumnFilterInput('${key}', this.value)"></div>`;
+            } else if (type === 'select') {
+                const opts = COL_FILTER_SELECT[key].map(o =>
+                    `<option value="${escapeHtml(o)}" ${cur === o ? 'selected' : ''}>${o === '' ? 'All' : escapeHtml(o)}</option>`).join('');
+                inner += `<div class="cf-row"><select onchange="onColumnFilterSelect('${key}', this.value)">${opts}</select></div>`;
+            } else if (type === 'date') {
+                const from = cur && cur.from ? cur.from : '';
+                const to = cur && cur.to ? cur.to : '';
+                inner += `<div class="cf-range"><span>From</span><input type="date" value="${from}" onchange="onColumnFilterDate('${key}','from',this.value)"></div>`;
+                inner += `<div class="cf-range"><span>To</span><input type="date" value="${to}" onchange="onColumnFilterDate('${key}','to',this.value)"></div>`;
+            }
+            inner += `<div class="cf-actions"><button class="cf-clear" onclick="onColumnFilterSelect('${key}','')">Clear</button></div>`;
+
+            pop.innerHTML = inner;
+            pop.style.display = 'block';
+            // position under the clicked button; keep inside viewport
+            const r = ev.currentTarget.getBoundingClientRect();
+            const pw = pop.offsetWidth;
+            let left = Math.min(r.left, window.innerWidth - pw - 8);
+            pop.style.left = Math.max(8, left) + 'px';
+            pop.style.top = (r.bottom + window.scrollY + 6) + 'px';
+        }
+
+        function closeColumnFilterPop() {
+            const pop = document.getElementById('colFilterPop');
+            if (pop) pop.style.display = 'none';
+            colFilterOpenKey = null;
+        }
+
         function renderAllApplicationsHeaders() {
             const row = document.getElementById('allApplicationsHeaderRow');
             if (!row) return;
             let html = '';
             displayedColumns.forEach(key => {
                 const col = ALL_COLUMNS.find(c => c.key === key);
-                html += `<th>${col ? escapeHtml(col.label) : escapeHtml(key)}</th>`;
+                const label = col ? col.label : key;
+                const type = colFilterType(key);
+                const active = isColFilterActive(key);
+                const btn = type
+                    ? `<button class="col-filter-btn${active ? ' active' : ''}" title="Filter: ${escapeHtml(label)}" onclick="toggleColumnFilter(event,'${key}')">${funnelSVG()}</button>`
+                    : '';
+                html += `<th class="${active ? 'col-filter-active' : ''}">${escapeHtml(label)}${btn}</th>`;
             });
             html += '<th></th>';
             row.innerHTML = html;
@@ -1926,6 +2087,7 @@
                 });
                 if (status) params.set('status', status);
                 if (search) params.set('search', search);
+                serializeColumnFilters(params);
                 const url = '/api/v1/applications?' + params.toString();
                 const response = await api(url);
                 if (!response.ok) throw new Error('Backend error');
@@ -1938,7 +2100,7 @@
                 }
                 tableBody.innerHTML = '';
                 renderPager(appPager, 'app');
-                if (apps.length === 0 && !status && !search) {
+                if (apps.length === 0 && !anyFilterActive()) {
                     tableBody.innerHTML = `<tr><td colspan="${colCount}" style="text-align: center; color: #888;">No applications yet.</td></tr>`;
                     return;
                 }
@@ -3640,7 +3802,17 @@
                 .replace(/'/g, "\\'"));
         }
     </script>
+<div id="colFilterPop"></div>
 <script src="https://unpkg.com/lucide@latest"></script>
-<script>document.addEventListener('DOMContentLoaded', function() { if (typeof lucide !== 'undefined') lucide.createIcons(); });</script>
+<script>document.addEventListener('DOMContentLoaded', function() { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+document.addEventListener('click', function(e) {
+    const pop = document.getElementById('colFilterPop');
+    if (!pop || pop.style.display === 'none') return;
+    if (pop.contains(e.target)) return;
+    if (e.target.closest && e.target.closest('.col-filter-btn')) return;
+    closeColumnFilterPop();
+});
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeColumnFilterPop(); });
+</script>
 </body>
 </html>
