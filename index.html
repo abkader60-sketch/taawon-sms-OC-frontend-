@@ -952,6 +952,20 @@
                             <button class="btn-submit" onclick="importBacklogExcel()" style="display:inline-block;width:auto;padding:12px 32px;"><i data-lucide="upload" style="width:14px;height:14px;"></i> Upload &amp; Import</button>
                         </div>
                         <div id="backlogImportResult"></div>
+
+                        <div style="margin-top:28px;border-top:1px solid var(--color-border);padding-top:20px;">
+                            <h3 style="margin-top:0;color:#1a1c23;font-size:16px;">Import Induction (Excel) — New Applications</h3>
+                            <p class="card-subtitle" style="margin-top:0;">Upload the client's <em>Induction Form</em> template. Each row creates a <strong>new</strong> Full-form application in <strong>Pending Security Clearance</strong>, tagged <strong>Excel Import</strong> — this is different from the Approved-status backlog import above.</p>
+                            <div style="background:#f9f9f9;border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;">
+                                <p style="margin:0 0 12px;font-size:14px;color:#555;">
+                                    Expected template: sheet <code>induction form</code>, columns <code>No.</code>, <code>PROJECT</code>, <code>Company Name / Employer</code>, <code>Full Name</code>, <code>Gender</code>, <code>Nationality</code>, <code>Date of Birth</code>, <code>ID Type</code>, <code>Iqama / Business Visa / National ID Number</code>, <code>Iqama / National ID Expiry Date</code>, <code>Date Joined</code>, <code>Mobile Number</code>, <code>Email</code>, <code>Blood Type</code>, <code>Sponsor Name</code>, <code>Insurance Expiry</code>, <code>Language</code>, <code>Subcontractor</code>, <code>3rd-Party Sponsor</code>, <code>Legal Agreement copy</code>, <code>Legal Agreement Expiry</code>, <code>Job / Trade</code>, <code>Location</code>, <code>Safety Induction Date</code>, <code>Project ID</code>, <code>Re-New Project ID</code>, <code>DAMAGED</code>, <code>LOST</code>, <code>RETURN</code>, <code>INACTIVE / ACTIVE</code>.
+                                </p>
+                                <input type="file" id="inductionApplicantsFile" accept=".xlsx,.xls" style="margin-bottom:12px;">
+                                <br>
+                                <button class="btn-submit" onclick="importInductionApplicants()" style="display:inline-block;width:auto;padding:12px 32px;"><i data-lucide="upload" style="width:14px;height:14px;"></i> Upload &amp; Import</button>
+                            </div>
+                            <div id="inductionApplicantsResult"></div>
+                        </div>
                     </div>
 
                     <!-- Non Grata admin pane removed — it's a duplicate of the standalone sidebar view.
@@ -1087,6 +1101,10 @@
             { key:'safety_induction_date', label:'Safety Induction Date', render:(a)=>a.safety_induction_date?new Date(a.safety_induction_date).toLocaleDateString():'-' },
             { key:'workflow_type', label:'Workflow Type', render:(a)=>escapeHtml(a.workflow_type||'-') },
             { key:'form_variant', label:'Form Variant', render:(a)=>escapeHtml(a.form_variant||'-') },
+            { key:'submission_source', label:'Source', default:true,
+              render:(a)=> a.submission_source === 'excel_import'
+                  ? '<span class="group-tag group-tag-2">Excel Import</span>'
+                  : '<span class="group-tag group-tag-1">Manual</span>' },
             { key:'submitter_name', label:'Submitted By', render:(a)=>escapeHtml(a.submitter_name||'-') },
         ];
         let displayedColumns = ALL_COLUMNS.filter(c=>c.default).map(c=>c.key);
@@ -1907,6 +1925,7 @@
             language: ['', 'Arabic', 'English', 'Hindi', 'Urdu', 'Tagalog', 'Bengali', 'Nepali', 'Other'],
             form_variant: ['', 'brief', 'full'],
             workflow_type: ['', 'security_only', 'standard'],
+            submission_source: ['', 'manual', 'excel_import'],
             is_third_party_sponsor: ['', 'Yes', 'No'],
         };
         const COL_FILTER_DATE = ['created_at','date_of_birth','iqama_expiry_date','passport_expiry_date','insurance_expiry_date','legal_agreement_expiry_date','date_joined','safety_induction_date'];
@@ -2459,6 +2478,10 @@
                 ? '<span class="group-tag group-tag-1" style="margin-left: 8px;">Brief form</span>'
                 : (a.form_variant === 'full' ? '<span class="group-tag group-tag-2" style="margin-left: 8px;">Comprehensive form</span>' : '');
 
+            const sourceTag = a.submission_source === 'excel_import'
+                ? '<span class="group-tag group-tag-2" style="margin-left: 8px;">Excel Import</span>'
+                : '<span class="group-tag group-tag-1" style="margin-left: 8px;">Manual</span>';
+
             // Find photo attachment for inline display — load via fetch as data URL
             const photoAtt = (data.attachments || []).find(at => at.attachment_type === 'photo');
             let photoPlaceholder = '';
@@ -2497,7 +2520,7 @@
                 ${editingNotice}
                 ${photoPlaceholder}
                 <div class="section-heading">Status</div>
-                <p><span class="badge ${badgeClass}">${escapeHtml(a.workflow_state)}</span>${variantTag}</p>
+                <p><span class="badge ${badgeClass}">${escapeHtml(a.workflow_state)}</span>${variantTag}${sourceTag}</p>
                 <div class="section-heading">Applicant Details</div>
                 <dl class="detail-grid">
                     ${detailField('Full Name', 'full_name', a.full_name)}
@@ -2622,6 +2645,47 @@
 
             try {
                 const r = await api('/api/v1/admin/applications/import', { method: 'POST', body: fd, headers: {} });
+                const data = await r.json();
+                if (r.ok) {
+                    let html = `<div class="status-box success-msg">✔ Imported: <strong>${data.imported}</strong> application(s)`;
+                    if (data.skipped > 0) html += `, skipped: <strong>${data.skipped}</strong>`;
+                    html += `</div>`;
+                    if (data.application_ids && data.application_ids.length) {
+                        html += `<p style="font-size:13px;color:#555;margin-top:8px;">Application IDs: ${data.application_ids.map(id => `<a href="javascript:void(0)" onclick="openViewModal(${id})">#${id}</a>`).join(', ')}</p>`;
+                    }
+                    if (data.errors && data.errors.length) {
+                        html += `<div style="margin-top:12px;background:#fff3f3;padding:12px;border-radius:6px;font-size:13px;"><strong style="color:#c62828;">${data.errors.length} error(s):</strong><ul style="margin:6px 0 0;padding-left:20px;">${data.errors.slice(0,10).map(e => `<li style="color:#555;">${escapeHtml(e)}</li>`).join('')}</ul></div>`;
+                    }
+                    resultDiv.innerHTML = html;
+                    fileInput.value = '';
+                    // Refresh dashboard lists
+                    fetchAllApplications();
+                    fetchPendingApplications();
+                    updateStatCards();
+                } else {
+                    resultDiv.innerHTML = `<div class="status-box error-msg">Import failed: ${escapeHtml(data.detail || 'Unknown error')}</div>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="status-box error-msg">Connection failed: ${escapeHtml(e.message || e)}</div>`;
+            } finally {
+                btn.disabled = false; btn.textContent = 'Upload & Import';
+            }
+        }
+
+        async function importInductionApplicants() {
+            const fileInput = document.getElementById('inductionApplicantsFile');
+            const resultDiv = document.getElementById('inductionApplicantsResult');
+            const file = fileInput.files[0];
+            if (!file) { resultDiv.innerHTML = '<div class="status-box error-msg">Please select an Excel file first.</div>'; return; }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            const btn = resultDiv.parentElement.querySelector('.btn-submit');
+            btn.disabled = true; btn.textContent = 'Importing...';
+            resultDiv.innerHTML = '<div class="status-box" style="color:#888;">Importing... this may take a moment.</div>';
+
+            try {
+                const r = await api('/api/v1/admin/applications/import/induction', { method: 'POST', body: fd, headers: {} });
                 const data = await r.json();
                 if (r.ok) {
                     let html = `<div class="status-box success-msg">✔ Imported: <strong>${data.imported}</strong> application(s)`;
